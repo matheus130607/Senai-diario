@@ -1,0 +1,244 @@
+// src/components/AdminDashboard.jsx
+import React, { useState } from 'react';
+import { PieChart, BookOpen, User, Building, GraduationCap, Settings, Edit, Trash2, CheckSquare, Square, Download, FileSpreadsheet, LinkIcon } from 'lucide-react';
+import DashboardView from './DashboardView';
+import { useCrudOperations } from '../hooks/useCrudOperations';
+import { exportJSON, exportExcelCSV } from '../utils/utils';
+
+export default function AdminDashboard({ 
+  data, setData, currentUser, adminTab, setAdminTab, showToast, requestConfirm 
+}) {
+  const [editingTurma, setEditingTurma] = useState(null);
+  const [editingProfessor, setEditingProfessor] = useState(null);
+  const [editingEmpresa, setEditingEmpresa] = useState(null);
+  const [editingAluno, setEditingAluno] = useState(null);
+  
+  const [formTurma, setFormTurma] = useState({ nome: '' });
+  const [formProf, setFormProf] = useState({ nome: '', cpf: '', nif: '', telefone: '', email: '', senha: '', turmas: [] });
+  const [formEmpresa, setFormEmpresa] = useState({ nome: '', email: '', senha: '' });
+  const [formAluno, setFormAluno] = useState({ nome: '', cpf: '', telefone: '', email: '', turmaId: '', empresaId: '' });
+
+  const crudOps = useCrudOperations(data, setData, showToast, requestConfirm);
+
+  const toggleProfTurma = (turmaId) => {
+    setFormProf(prev => {
+      const turmas = prev.turmas.includes(turmaId) ? prev.turmas.filter(id => id !== turmaId) : [...prev.turmas, turmaId];
+      return { ...prev, turmas };
+    });
+  };
+
+  return (
+    <div className="animate-in fade-in duration-500">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Painel de Administração</h1>
+        <p className="text-sm text-slate-500 mt-1">Faça a gestão de turmas, professores, empresas parceiras, alunos e integrações.</p>
+      </div>
+
+      <div className="bg-white rounded-t-2xl border-x border-t border-slate-200 px-2 pt-2">
+        <nav className="flex space-x-2 overflow-x-auto">
+          {[
+            { id: 'dashboard', icon: PieChart, label: 'Visão Geral' },
+            { id: 'turmas', icon: BookOpen, label: 'Turmas' },
+            { id: 'professores', icon: User, label: 'Professores' },
+            { id: 'empresas', icon: Building, label: 'Empresas' },
+            { id: 'alunos', icon: GraduationCap, label: 'Alunos' },
+            { id: 'config', icon: Settings, label: 'Integrações & JSON' },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setAdminTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap
+                ${adminTab === tab.id ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <tab.icon className="w-4 h-4" /> {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div className="bg-white border border-t-0 border-slate-200 rounded-b-2xl shadow-sm min-h-[600px]">
+        {adminTab === 'dashboard' && <DashboardView disponiveisTurmas={data.turmas} data={data} titleContext="Turma" />}
+
+        {adminTab === 'turmas' && (
+          <div className="p-6">
+            <form onSubmit={(e) => crudOps.saveTurma(e, editingTurma, formTurma, setEditingTurma, setFormTurma)} className="flex gap-3 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <input type="text" value={formTurma.nome} onChange={e => setFormTurma({nome: e.target.value})} placeholder="Nome da Turma (Ex: Informática Tarde)" className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm" required />
+              <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">
+                {editingTurma ? 'Guardar' : 'Adicionar'}
+              </button>
+              {editingTurma && <button type="button" onClick={() => {setEditingTurma(null); setFormTurma({nome:''})}} className="px-4 text-slate-500 text-sm">Cancelar</button>}
+            </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.turmas.map(turma => (
+                <div key={turma.id} className="border border-slate-200 p-4 rounded-xl flex justify-between items-center group hover:border-slate-400">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-slate-100 p-2 rounded-lg text-slate-600"><BookOpen className="w-5 h-5"/></div>
+                    <span className="font-semibold text-slate-800">{turma.nome}</span>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100">
+                    <button onClick={() => {setEditingTurma(turma.id); setFormTurma({nome: turma.nome})}} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit className="w-4 h-4"/></button>
+                    <button onClick={() => crudOps.deleteTurma(turma.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4"/></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'professores' && (
+          <div className="p-6">
+            <form onSubmit={(e) => crudOps.saveProfessor(e, editingProfessor, formProf, setEditingProfessor, setFormProf)} className="mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 mb-2">{editingProfessor ? 'Editar Professor' : 'Novo Professor'}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <input type="text" placeholder="Nome Completo" value={formProf.nome} onChange={e => setFormProf({...formProf, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="CPF" value={formProf.cpf} onChange={e => setFormProf({...formProf, cpf: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="NIF" value={formProf.nif} onChange={e => setFormProf({...formProf, nif: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="Telefone" value={formProf.telefone} onChange={e => setFormProf({...formProf, telefone: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="email" placeholder="E-mail" value={formProf.email} onChange={e => setFormProf({...formProf, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="Palavra-passe" value={formProf.senha} onChange={e => setFormProf({...formProf, senha: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+              </div>
+              <div>
+                <span className="block text-xs font-semibold text-slate-500 uppercase mb-2">Vincular Turmas</span>
+                <div className="flex flex-wrap gap-2">
+                  {data.turmas.length === 0 && <span className="text-sm text-slate-400">Nenhuma turma registada.</span>}
+                  {data.turmas.map(t => {
+                    const isSelected = formProf.turmas.includes(t.id);
+                    return (
+                      <button key={t.id} type="button" onClick={() => toggleProfTurma(t.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-600'}`}>
+                        {isSelected ? <CheckSquare className="w-4 h-4"/> : <Square className="w-4 h-4"/>} {t.nome}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-slate-200">
+                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingProfessor ? 'Guardar' : 'Registar'}</button>
+                {editingProfessor && <button type="button" onClick={() => {setEditingProfessor(null); setFormProf({nome:'', cpf:'', nif:'', telefone:'', email:'', senha:'', turmas:[]})}} className="px-4 text-slate-500 text-sm hover:bg-slate-200 rounded-lg">Cancelar</button>}
+              </div>
+            </form>
+            <div className="space-y-3">
+              {data.professores.map(prof => (
+                <div key={prof.id} className="border border-slate-200 p-4 rounded-xl flex justify-between items-center hover:bg-slate-50">
+                  <div>
+                    <div className="font-semibold text-slate-800 flex items-center gap-2"><User className="w-4 h-4"/> {prof.nome}</div>
+                    <div className="text-xs text-slate-500 mt-1">E-mail: {prof.email} | Turmas: {prof.turmas.length}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => {setEditingProfessor(prof.id); setFormProf(prof)}} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Edit className="w-4 h-4"/></button>
+                    <button onClick={() => crudOps.deleteProfessor(prof.id)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 className="w-4 h-4"/></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'empresas' && (
+          <div className="p-6">
+            <form onSubmit={(e) => crudOps.saveEmpresa(e, editingEmpresa, formEmpresa, setEditingEmpresa, setFormEmpresa)} className="mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 mb-2">{editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" placeholder="Nome da Empresa" value={formEmpresa.nome} onChange={e => setFormEmpresa({...formEmpresa, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="email" placeholder="E-mail" value={formEmpresa.email} onChange={e => setFormEmpresa({...formEmpresa, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="Palavra-passe" value={formEmpresa.senha} onChange={e => setFormEmpresa({...formEmpresa, senha: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-slate-200">
+                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingEmpresa ? 'Guardar' : 'Registar'}</button>
+                {editingEmpresa && <button type="button" onClick={() => {setEditingEmpresa(null); setFormEmpresa({nome:'', email:'', senha:''})}} className="px-4 text-slate-500 text-sm hover:bg-slate-200 rounded-lg">Cancelar</button>}
+              </div>
+            </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {data.empresas && data.empresas.map(emp => (
+                <div key={emp.id} className="border border-slate-200 p-4 rounded-xl flex justify-between items-center hover:bg-slate-50">
+                  <div>
+                    <div className="font-semibold text-slate-800 flex items-center gap-2"><Building className="w-4 h-4"/> {emp.nome}</div>
+                    <div className="text-xs text-slate-500 mt-1">E-mail: {emp.email}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => {setEditingEmpresa(emp.id); setFormEmpresa(emp)}} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Edit className="w-4 h-4"/></button>
+                    <button onClick={() => crudOps.deleteEmpresa(emp.id)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 className="w-4 h-4"/></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'alunos' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-slate-800">Gestão de Alunos</h2>
+              <button onClick={() => exportExcelCSV(data.alunos, data, 'admin_alunos')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4" /> Excel
+              </button>
+            </div>
+            <form onSubmit={(e) => crudOps.saveAluno(e, editingAluno, formAluno, setEditingAluno, setFormAluno)} className="mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+              <h3 className="text-sm font-bold text-slate-800 mb-2">{editingAluno ? 'Editar Aluno' : 'Novo Aluno'}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <input type="text" placeholder="Nome Completo" value={formAluno.nome} onChange={e => setFormAluno({...formAluno, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="CPF" value={formAluno.cpf} onChange={e => setFormAluno({...formAluno, cpf: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="Telefone" value={formAluno.telefone} onChange={e => setFormAluno({...formAluno, telefone: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="email" placeholder="E-mail" value={formAluno.email} onChange={e => setFormAluno({...formAluno, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <select value={formAluno.turmaId} onChange={e => setFormAluno({...formAluno, turmaId: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required>
+                  <option value="" disabled>Selecione a Turma...</option>
+                  {data.turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                </select>
+                <select value={formAluno.empresaId} onChange={e => setFormAluno({...formAluno, empresaId: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
+                  <option value="">Sem vínculo empresarial</option>
+                  {data.empresas && data.empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-slate-200">
+                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingAluno ? 'Guardar' : 'Registar'}</button>
+                {editingAluno && <button type="button" onClick={() => {setEditingAluno(null); setFormAluno({nome:'', cpf:'', telefone:'', email:'', turmaId:'', empresaId: ''})}} className="px-4 text-slate-500 text-sm hover:bg-slate-200 rounded-lg">Cancelar</button>}
+              </div>
+            </form>
+            <div className="overflow-x-auto border border-slate-200 rounded-xl">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
+                  <tr><th className="px-4 py-3">Nome</th><th className="px-4 py-3">E-mail</th><th className="px-4 py-3">Turma & Empresa</th><th className="px-4 py-3 text-right">Ações</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {data.alunos.map(aluno => (
+                    <tr key={aluno.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-800">{aluno.nome}</td>
+                      <td className="px-4 py-3 text-slate-500">{aluno.email}</td>
+                      <td className="px-4 py-3 text-slate-500 space-y-1">
+                        <span className="inline-block bg-slate-100 px-2 py-1 rounded text-xs border border-slate-200">{data.turmas.find(t=>t.id===aluno.turmaId)?.nome || 'Sem Turma'}</span>
+                        {aluno.empresaId && <span className="text-amber-700">{data.empresas.find(e=>e.id===aluno.empresaId)?.nome}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => {setEditingAluno(aluno.id); setFormAluno(aluno)}} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded mr-1"><Edit className="w-4 h-4"/></button>
+                        <button onClick={() => crudOps.deleteAluno(aluno.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded"><Trash2 className="w-4 h-4"/></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'config' && (
+          <div className="space-y-8 max-w-3xl p-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Integração Google</h3>
+              <p className="text-xs text-slate-500 mb-4">Insira o Webhook que receberá a requisição quando o professor submeter a chamada.</p>
+              <div className="flex gap-2">
+                <input type="url" value={data.config.webhookUrl} onChange={e => setData({...data, config: { webhookUrl: e.target.value }})} placeholder="https://script.google.com/macros/s/..." className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm" />
+                <button onClick={() => showToast("URL guardada!")} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">Guardar</button>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-blue-900 mb-1 flex items-center gap-2"><Settings className="w-4 h-4"/> Backup de Dados</h3>
+              <p className="text-xs text-blue-700 mb-4">Os dados estão guardados automaticamente na cache do navegador (LocalStorage).</p>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => exportJSON(data)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> Backup (.json)</button>
+                <button onClick={() => exportExcelCSV(data.alunos, data, 'relatorio_completo')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4" /> Excel (.csv)</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
