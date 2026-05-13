@@ -1,32 +1,40 @@
 import React, { useState } from 'react';
-import { 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
   User, Building, Shield, ChevronRight, ChevronLeft, KeyRound, AlertCircle, Loader2
 } from 'lucide-react';
+import TechBackground from './TechBackground';
+import logoSenai from '../assets/logo-senai.png'; // ajuste o caminho conforme sua estrutura
 
-export default function Login({ 
-  currentUser, setCurrentUser, setGlobalLoading, data, 
-  loginStep, setLoginStep, adminPassword, setAdminPassword, 
-  profEmail, setProfEmail, profSenha, setProfSenha, loginError, setLoginError 
+export default function Login({
+  currentUser, setCurrentUser, setGlobalLoading, data,
+  loginStep, setLoginStep, adminPassword, setAdminPassword,
+  profEmail, setProfEmail, profSenha, setProfSenha, loginError, setLoginError
 }) {
-  const handleAdminLogin = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
     if (adminPassword === 'admin123') {
+      setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
         setCurrentUser({ role: 'admin' });
         setLoginError('');
         setAdminPassword('');
         setGlobalLoading(false);
+        setIsSubmitting(false);
       }, 800);
     } else {
       setLoginError('Senha de administrador incorreta.');
     }
   };
 
-  const handleProfLogin = (e) => {
+  const handleProfLogin = async (e) => {
     e.preventDefault();
     const prof = data.professores.find(p => p.email === profEmail && p.senha === profSenha);
     if (prof) {
+      setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
         setCurrentUser({ role: 'professor', ...prof });
@@ -34,16 +42,18 @@ export default function Login({
         setProfEmail('');
         setProfSenha('');
         setGlobalLoading(false);
+        setIsSubmitting(false);
       }, 800);
     } else {
       setLoginError('E-mail ou palavra-passe incorretos.');
     }
   };
 
-  const handleEmpresaLogin = (e) => {
+  const handleEmpresaLogin = async (e) => {
     e.preventDefault();
     const emp = data.empresas.find(emp => emp.email === profEmail && emp.senha === profSenha);
     if (emp) {
+      setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
         setCurrentUser({ role: 'empresa', ...emp });
@@ -51,185 +61,271 @@ export default function Login({
         setProfEmail('');
         setProfSenha('');
         setGlobalLoading(false);
+        setIsSubmitting(false);
       }, 800);
     } else {
       setLoginError('E-mail ou palavra-passe incorretos.');
     }
   };
 
-  if (currentUser) return null; // Já logado
+  if (currentUser) return null;
+
+  // Variantes de animação (já rápidas)
+  const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.5 } }
+  };
+
+  const slideUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+  };
+
+  const slideRight = {
+    hidden: { opacity: 0, x: 40 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.3 } }
+  };
 
   return (
-    <div className="min-h-screen flex font-sans bg-white">
-      
-      {/* Lado Esquerdo - Imagem Institucional */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900 overflow-hidden">
-        {/* Imagem de Fundo (Indústria/Tecnologia) */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=2070')" }}
-        ></div>
-        {/* Overlay Escuro com Degradê Vermelho */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-slate-900/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-red-900/20 mix-blend-multiply"></div>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-black overflow-hidden">
+      {/* LADO ESQUERDO - FUNDO TECNOLÓGICO + CONTEÚDO */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-black overflow-hidden">
+        <TechBackground />
         
-        <div className="relative z-10 flex flex-col justify-end p-16 w-full text-white">
-          <div className="mb-auto mt-8">
-             <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI SP" className="h-12 w-auto object-contain bg-white p-2 rounded" />
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeIn}
+          className="absolute inset-0 z-10 flex flex-col items-center text-white pointer-events-none"
+        >
+          {/* Logo centralizada e alinhada ao topo do card direito */}
+          <div className="pt-36">
+            <img
+              src={logoSenai}
+              alt="SENAI SP"
+              className="h-16 w-auto object-contain mx-auto"
+            />
           </div>
-          <div>
-            <div className="w-12 h-1 bg-red-600 mb-6"></div>
-            <h1 className="text-4xl font-bold mb-4 leading-tight">Educação para a <br/>Indústria do Futuro</h1>
-            <p className="text-lg text-slate-300 font-light max-w-lg">
-              Bem-vindo ao Portal de Gestão Escolar. Registe presenças, acompanhe o desempenho dos alunos e conecte a sala de aula às empresas parceiras.
+
+          {/* Texto centralizado */}
+          <div className="mt-auto pb-6 px-12 xl:px-16 text-center">
+            <div className="w-12 h-0.5 bg-red-600 mb-6 mx-auto"></div>
+            <h1 className="text-3xl xl:text-4xl font-bold mb-4 leading-tight tracking-tight">
+              Educação para a <br />Indústria do Futuro
+            </h1>
+            <p className="text-base text-slate-300 font-light max-w-md mx-auto leading-relaxed">
+              Portal de Gestão Escolar SENAI-SP. Registre presenças, acompanhe desempenho e conecte alunos às empresas parceiras.
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Lado Direito - Formulário de Login */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-16 relative">
-        
-        {/* Logo Mobile */}
-        <div className="w-full max-w-md flex lg:hidden justify-center mb-10">
-           <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI" className="h-10 object-contain" />
-        </div>
+      {/* LADO DIREITO - FUNDO BRANCO E CARD BRANCO */}
+      <div className="w-full lg:w-1/2 relative bg-white flex items-center justify-center p-6">
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white lg:hidden" />
 
-        <div className="w-full max-w-md animate-in fade-in slide-in-from-right-8 duration-500">
-          
-          {loginStep === 'select' && (
-            <>
-              <div className="mb-10 text-center lg:text-left">
-                <h2 className="text-3xl font-bold text-slate-900">Aceder à Plataforma</h2>
-                <p className="text-slate-500 mt-2 text-sm">Selecione o seu perfil de utilizador para iniciar sessão.</p>
-              </div>
-
-              <div className="space-y-4">
-                <button onClick={() => setLoginStep('prof_auth')} className="w-full group flex items-center justify-between p-5 border border-slate-200 rounded-xl hover:border-red-500 hover:shadow-md transition-all bg-white text-left">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-red-600 flex items-center justify-center group-hover:bg-red-50 transition-colors">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 group-hover:text-red-600 transition-colors">Sou Professor</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Aceder ao diário de classe eletrónico</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-red-500 transition-transform group-hover:translate-x-1" />
-                </button>
-
-                <button onClick={() => setLoginStep('empresa_auth')} className="w-full group flex items-center justify-between p-5 border border-slate-200 rounded-xl hover:border-slate-800 hover:shadow-md transition-all bg-white text-left">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
-                      <Building className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 group-hover:text-slate-800 transition-colors">Sou Empresa Parceira</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Acompanhar os alunos aprendizes</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-800 transition-transform group-hover:translate-x-1" />
-                </button>
-
-                <button onClick={() => setLoginStep('admin_auth')} className="w-full group flex items-center justify-between p-5 border border-slate-200 rounded-xl hover:border-slate-800 hover:shadow-md transition-all bg-white text-left">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
-                      <Shield className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 group-hover:text-slate-800 transition-colors">Sou Administrador</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Gestão de turmas e sistema</p>
-                    </div>
-                  </div>
-                  <Lock className="w-4 h-4 text-slate-300 group-hover:text-slate-800" />
-                </button>
-              </div>
-            </>
-          )}
-
-          {loginStep !== 'select' && (
-            <div className="animate-in slide-in-from-right-4">
-              <button 
-                type="button" 
-                onClick={() => { setLoginStep('select'); setLoginError(''); }} 
-                className="text-sm text-slate-500 hover:text-red-600 font-medium mb-8 flex items-center gap-1.5 transition-colors"
+        <div className="relative z-20 w-full max-w-md">
+          <AnimatePresence mode="wait">
+            {loginStep === 'select' && (
+              <motion.div
+                key="select"
+                variants={slideUp}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
               >
-                <ChevronLeft className="w-4 h-4" /> Voltar aos perfis
-              </button>
-
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-slate-900">
-                  {loginStep === 'admin_auth' ? 'Acesso Restrito' : 'Aceder à Conta'}
+                <h2 className="text-2xl font-semibold text-center text-gray-900 mb-2">
+                  Aceder à Plataforma
                 </h2>
-                <p className="text-slate-500 mt-2 text-sm">
-                  {loginStep === 'admin_auth' && 'Introduza a palavra-passe administrativa do sistema.'}
-                  {loginStep === 'prof_auth' && 'Bem-vindo de volta, Professor! Insira os seus dados.'}
-                  {loginStep === 'empresa_auth' && 'Área exclusiva para empresas parceiras.'}
+                <p className="text-sm text-center text-gray-500 mb-8">
+                  Selecione o seu perfil
                 </p>
-              </div>
 
-              <form 
-                onSubmit={
-                  loginStep === 'admin_auth' ? handleAdminLogin : 
-                  loginStep === 'prof_auth' ? handleProfLogin : 
-                  handleEmpresaLogin
-                } 
-                className="space-y-5"
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="space-y-3"
+                >
+                  <motion.button
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setLoginStep('prof_auth')}
+                    className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900">Sou Professor</h3>
+                        <p className="text-xs text-gray-500">Aceder ao diário de classe eletrónico</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={20} className="text-gray-400 group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
+                  </motion.button>
+
+                  <motion.button
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setLoginStep('empresa_auth')}
+                    className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <Building className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900">Sou Empresa Parceira</h3>
+                        <p className="text-xs text-gray-500">Acompanhar os alunos aprendizes</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={20} className="text-gray-400 group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
+                  </motion.button>
+
+                  <motion.button
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setLoginStep('admin_auth')}
+                    className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <Shield className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-900">Sou Administrador</h3>
+                        <p className="text-xs text-gray-500">Gestão de turmas e sistema</p>
+                      </div>
+                    </div>
+                    <KeyRound size={20} className="text-gray-400 group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
+                  </motion.button>
+                </motion.div>
+
+                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between text-xs text-gray-400">
+                  <span>© {new Date().getFullYear()} SENAI São Paulo</span>
+                  <a href="#" className="hover:text-red-500 transition-colors">Precisa de ajuda?</a>
+                </div>
+              </motion.div>
+            )}
+
+            {loginStep !== 'select' && (
+              <motion.div
+                key="auth"
+                variants={slideRight}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, x: -30 }}
+                className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
               >
-                
-                {loginStep !== 'admin_auth' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">E-mail Corporativo</label>
-                    <input 
-                      type="email" 
-                      value={profEmail} 
-                      onChange={(e) => setProfEmail(e.target.value)} 
-                      placeholder="exemplo@senai.br" 
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none transition-all" 
-                      required 
-                    />
-                  </div>
-                )}
+                <button
+                  onClick={() => { setLoginStep('select'); setLoginError(''); }}
+                  className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-red-500 mb-6 transition-colors"
+                >
+                  <ChevronLeft size={16} /> Voltar aos perfis
+                </button>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    {loginStep === 'admin_auth' ? 'Palavra-passe de Administrador' : 'Palavra-passe'}
-                  </label>
-                  <div className="relative">
-                    {loginStep === 'admin_auth' && <KeyRound className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />}
-                    <input 
-                      type="password"
-                      value={loginStep === 'admin_auth' ? adminPassword : profSenha} 
-                      onChange={(e) => loginStep === 'admin_auth' ? setAdminPassword(e.target.value) : setProfSenha(e.target.value)} 
-                      placeholder="••••••••" 
-                      className={`w-full ${loginStep === 'admin_auth' ? 'pl-12' : 'px-4'} pr-4 py-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none transition-all`}
-                      required 
-                      autoFocus={loginStep === 'admin_auth'}
-                    />
-                  </div>
-                  {loginError && (
-                    <p className="mt-2 text-xs font-medium text-red-600 flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" /> {loginError}
-                    </p>
-                  )}
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+                    {loginStep === 'admin_auth' ? 'Acesso Restrito' : 'Aceder à Conta'}
+                  </h2>
+                  <p className="text-sm text-gray-500 mb-6">
+                    {loginStep === 'admin_auth' && 'Introduza a palavra-passe administrativa.'}
+                    {loginStep === 'prof_auth' && 'Bem-vindo de volta, Professor!'}
+                    {loginStep === 'empresa_auth' && 'Área exclusiva para empresas parceiras.'}
+                  </p>
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-lg text-sm font-bold transition-all shadow-md hover:shadow-lg mt-4"
+                <form
+                  onSubmit={
+                    loginStep === 'admin_auth' ? handleAdminLogin :
+                    loginStep === 'prof_auth' ? handleProfLogin :
+                    handleEmpresaLogin
+                  }
                 >
-                  Entrar na Plataforma
-                </button>
-              </form>
-            </div>
-          )}
+                  {loginStep !== 'admin_auth' && (
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
+                        E-mail Corporativo
+                      </label>
+                      <input
+                        type="email"
+                        value={profEmail}
+                        onChange={(e) => setProfEmail(e.target.value)}
+                        placeholder="exemplo@senai.br"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
+                        required
+                      />
+                    </div>
+                  )}
 
-          {/* Footer Form */}
-          <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-medium">
-            <span>© {new Date().getFullYear()} SENAI São Paulo</span>
-            <a href="#" className="hover:text-red-600 transition-colors">Precisa de ajuda?</a>
-          </div>
+                  <div className="mb-6">
+                    <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
+                      {loginStep === 'admin_auth' ? 'Palavra-passe de Administrador' : 'Palavra-passe'}
+                    </label>
+                    <div className="relative">
+                      {loginStep === 'admin_auth' && (
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      )}
+                      <input
+                        type="password"
+                        value={loginStep === 'admin_auth' ? adminPassword : profSenha}
+                        onChange={(e) => loginStep === 'admin_auth' ? setAdminPassword(e.target.value) : setProfSenha(e.target.value)}
+                        placeholder="••••••••"
+                        className={`w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition ${
+                          loginStep === 'admin_auth' ? 'pl-10' : ''
+                        }`}
+                        required
+                        autoFocus={loginStep === 'admin_auth'}
+                      />
+                    </div>
+                    {loginError && (
+                      <p className="text-red-500 text-xs flex items-center gap-1 mt-2">
+                        <AlertCircle size={14} /> {loginError}
+                      </p>
+                    )}
+                  </div>
 
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-full shadow-lg shadow-red-200 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 size={18} className="animate-spin" />
+                        A processar...
+                      </span>
+                    ) : (
+                      'Entrar na Plataforma'
+                    )}
+                  </button>
+                </form>
+
+                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between text-xs text-gray-400">
+                  <span>© {new Date().getFullYear()} SENAI São Paulo</span>
+                  <a href="#" className="hover:text-red-500 transition-colors">Precisa de ajuda?</a>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

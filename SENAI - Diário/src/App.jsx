@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, LogOut, Shield, User, Building, CheckCircle2 } from 'lucide-react';
 import { initialData } from './data/initialData';
-import LoginPage from './components/LoginPage';
+import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import ProfessorDashboard from './components/ProfessorDashboard';
 import EmpresaDashboard from './components/EmpresaDashboard';
@@ -94,7 +94,7 @@ export default function App() {
 
   // --- TELA DE LOGIN ---
   if (!currentUser) {
-    return <LoginPage 
+    return <Login 
       data={data} 
       setCurrentUser={setCurrentUser} 
       setGlobalLoading={setGlobalLoading}
