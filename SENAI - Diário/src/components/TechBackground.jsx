@@ -44,8 +44,8 @@ const TechBackground = () => {
       this.x = Math.random() * width;
       this.y = Math.random() * height;
       // Velocidades para movimento (valores suaves, mas perceptíveis)
-      this.speedX = (Math.random() - 0.5) * 1.4;   // mesma base das partículas brancas
-      this.speedY = (Math.random() - 0.5) * 1.3;
+      this.speedX = (Math.random() - 0.5) * 1.7;   // mesma base das partículas brancas
+      this.speedY = (Math.random() - 0.5) * 1.8;
       this.baseRadius = Math.random() * 2.5 + 1.8;
       this.pulseSpeed = 0.04 + Math.random() * 0.08;
       this.pulsePhase = Math.random() * Math.PI * 2;
@@ -153,7 +153,7 @@ const TechBackground = () => {
             ctx.moveTo(redPoints[i].x, redPoints[i].y);
             ctx.lineTo(redPoints[j].x, redPoints[j].y);
             ctx.strokeStyle = `rgba(220, 60, 60, ${alpha * 3})`;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.4;
             ctx.stroke();
           }
         }
