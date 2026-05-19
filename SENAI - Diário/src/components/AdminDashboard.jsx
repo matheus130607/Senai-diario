@@ -1,7 +1,9 @@
 // src/components/AdminDashboard.jsx
 import React, { useState } from 'react';
+import DashboardShell from './DashboardShell';
 import { PieChart, BookOpen, User, Building, GraduationCap, Settings, Edit, Trash2, CheckSquare, Square, Download, FileSpreadsheet, LinkIcon } from 'lucide-react';
 import DashboardView from './DashboardView';
+import SearchableSelect from './ui/SearchableSelect';
 import { useCrudOperations } from '../hooks/useCrudOperations';
 import { exportJSON, exportExcelCSV } from '../utils/utils';
 
@@ -28,31 +30,8 @@ export default function AdminDashboard({
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Painel de Administração</h1>
-        <p className="text-sm text-slate-500 mt-1">Faça a gestão de turmas, professores, empresas parceiras, alunos e integrações.</p>
-      </div>
-
-      <div className="bg-white rounded-t-2xl border-x border-t border-slate-200 px-2 pt-2">
-        <nav className="flex space-x-2 overflow-x-auto">
-          {[
-            { id: 'dashboard', icon: PieChart, label: 'Visão Geral' },
-            { id: 'turmas', icon: BookOpen, label: 'Turmas' },
-            { id: 'professores', icon: User, label: 'Professores' },
-            { id: 'empresas', icon: Building, label: 'Empresas' },
-            { id: 'alunos', icon: GraduationCap, label: 'Alunos' },
-            { id: 'config', icon: Settings, label: 'Integrações & JSON' },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setAdminTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap
-                ${adminTab === tab.id ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
-            >
-              <tab.icon className="w-4 h-4" /> {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+    <DashboardShell title="Painel de Administração" subtitle="Faça a gestão de turmas, professores, empresas parceiras, alunos e integrações.">
+      
 
       <div className="bg-white border border-t-0 border-slate-200 rounded-b-2xl shadow-sm min-h-[600px]">
         {adminTab === 'dashboard' && <DashboardView disponiveisTurmas={data.turmas} data={data} titleContext="Turma" />}
@@ -88,12 +67,12 @@ export default function AdminDashboard({
             <form onSubmit={(e) => crudOps.saveProfessor(e, editingProfessor, formProf, setEditingProfessor, setFormProf)} className="mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
               <h3 className="text-sm font-bold text-slate-800 mb-2">{editingProfessor ? 'Editar Professor' : 'Novo Professor'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <input type="text" placeholder="Nome Completo" value={formProf.nome} onChange={e => setFormProf({...formProf, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="CPF" value={formProf.cpf} onChange={e => setFormProf({...formProf, cpf: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="NIF" value={formProf.nif} onChange={e => setFormProf({...formProf, nif: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="Telefone" value={formProf.telefone} onChange={e => setFormProf({...formProf, telefone: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="email" placeholder="E-mail" value={formProf.email} onChange={e => setFormProf({...formProf, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="Palavra-passe" value={formProf.senha} onChange={e => setFormProf({...formProf, senha: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="Nome Completo" value={formProf.nome} onChange={e => setFormProf({...formProf, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="CPF" value={formProf.cpf} onChange={e => setFormProf({...formProf, cpf: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="NIF" value={formProf.nif} onChange={e => setFormProf({...formProf, nif: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="Telefone" value={formProf.telefone} onChange={e => setFormProf({...formProf, telefone: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="email" placeholder="E-mail" value={formProf.email} onChange={e => setFormProf({...formProf, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="Palavra-passe" value={formProf.senha} onChange={e => setFormProf({...formProf, senha: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
               </div>
               <div>
                 <span className="block text-xs font-semibold text-slate-500 uppercase mb-2">Vincular Turmas</span>
@@ -111,7 +90,7 @@ export default function AdminDashboard({
                 </div>
               </div>
               <div className="flex gap-2 pt-2 border-t border-slate-200">
-                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingProfessor ? 'Guardar' : 'Registar'}</button>
+                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingProfessor ? 'Guardar' : 'Registrar'}</button>
                 {editingProfessor && <button type="button" onClick={() => {setEditingProfessor(null); setFormProf({nome:'', cpf:'', nif:'', telefone:'', email:'', senha:'', turmas:[]})}} className="px-4 text-slate-500 text-sm hover:bg-slate-200 rounded-lg">Cancelar</button>}
               </div>
             </form>
@@ -137,12 +116,12 @@ export default function AdminDashboard({
             <form onSubmit={(e) => crudOps.saveEmpresa(e, editingEmpresa, formEmpresa, setEditingEmpresa, setFormEmpresa)} className="mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
               <h3 className="text-sm font-bold text-slate-800 mb-2">{editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" placeholder="Nome da Empresa" value={formEmpresa.nome} onChange={e => setFormEmpresa({...formEmpresa, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="email" placeholder="E-mail" value={formEmpresa.email} onChange={e => setFormEmpresa({...formEmpresa, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="Palavra-passe" value={formEmpresa.senha} onChange={e => setFormEmpresa({...formEmpresa, senha: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
+                <input type="text" placeholder="Nome da Empresa" value={formEmpresa.nome} onChange={e => setFormEmpresa({...formEmpresa, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="email" placeholder="E-mail" value={formEmpresa.email} onChange={e => setFormEmpresa({...formEmpresa, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="Palavra-passe" value={formEmpresa.senha} onChange={e => setFormEmpresa({...formEmpresa, senha: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
               </div>
               <div className="flex gap-2 pt-2 border-t border-slate-200">
-                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingEmpresa ? 'Guardar' : 'Registar'}</button>
+                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingEmpresa ? 'Guardar' : 'Registrar'}</button>
                 {editingEmpresa && <button type="button" onClick={() => {setEditingEmpresa(null); setFormEmpresa({nome:'', email:'', senha:''})}} className="px-4 text-slate-500 text-sm hover:bg-slate-200 rounded-lg">Cancelar</button>}
               </div>
             </form>
@@ -174,21 +153,19 @@ export default function AdminDashboard({
             <form onSubmit={(e) => crudOps.saveAluno(e, editingAluno, formAluno, setEditingAluno, setFormAluno)} className="mb-8 bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
               <h3 className="text-sm font-bold text-slate-800 mb-2">{editingAluno ? 'Editar Aluno' : 'Novo Aluno'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <input type="text" placeholder="Nome Completo" value={formAluno.nome} onChange={e => setFormAluno({...formAluno, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="CPF" value={formAluno.cpf} onChange={e => setFormAluno({...formAluno, cpf: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="text" placeholder="Telefone" value={formAluno.telefone} onChange={e => setFormAluno({...formAluno, telefone: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <input type="email" placeholder="E-mail" value={formAluno.email} onChange={e => setFormAluno({...formAluno, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm" required />
-                <select value={formAluno.turmaId} onChange={e => setFormAluno({...formAluno, turmaId: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required>
-                  <option value="" disabled>Selecione a Turma...</option>
-                  {data.turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                </select>
-                <select value={formAluno.empresaId} onChange={e => setFormAluno({...formAluno, empresaId: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white">
-                  <option value="">Sem vínculo empresarial</option>
-                  {data.empresas && data.empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                </select>
+                <input type="text" placeholder="Nome Completo" value={formAluno.nome} onChange={e => setFormAluno({...formAluno, nome: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="CPF" value={formAluno.cpf} onChange={e => setFormAluno({...formAluno, cpf: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="text" placeholder="Telefone" value={formAluno.telefone} onChange={e => setFormAluno({...formAluno, telefone: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <input type="email" placeholder="E-mail" value={formAluno.email} onChange={e => setFormAluno({...formAluno, email: e.target.value})} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white" required />
+                <div>
+                  <SearchableSelect options={data.turmas} value={formAluno.turmaId} onChange={(v) => setFormAluno({...formAluno, turmaId: v})} optionLabelKey="nome" optionValueKey="id" placeholder="Selecione a Turma..." />
+                </div>
+                <div>
+                  <SearchableSelect options={(data.empresas||[])} value={formAluno.empresaId} onChange={(v) => setFormAluno({...formAluno, empresaId: v})} optionLabelKey="nome" optionValueKey="id" placeholder="Sem vínculo empresarial" />
+                </div>
               </div>
               <div className="flex gap-2 pt-2 border-t border-slate-200">
-                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingAluno ? 'Guardar' : 'Registar'}</button>
+                <button type="submit" className="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">{editingAluno ? 'Guardar' : 'Registrar'}</button>
                 {editingAluno && <button type="button" onClick={() => {setEditingAluno(null); setFormAluno({nome:'', cpf:'', telefone:'', email:'', turmaId:'', empresaId: ''})}} className="px-4 text-slate-500 text-sm hover:bg-slate-200 rounded-lg">Cancelar</button>}
               </div>
             </form>
@@ -224,7 +201,7 @@ export default function AdminDashboard({
               <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Integração Google</h3>
               <p className="text-xs text-slate-500 mb-4">Insira o Webhook que receberá a requisição quando o professor submeter a chamada.</p>
               <div className="flex gap-2">
-                <input type="url" value={data.config.webhookUrl} onChange={e => setData({...data, config: { webhookUrl: e.target.value }})} placeholder="https://script.google.com/macros/s/..." className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm" />
+                <input type="url" value={data.config.webhookUrl} onChange={e => setData({...data, config: { webhookUrl: e.target.value }})} placeholder="https://script.google.com/macros/s/..." className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white" />
                 <button onClick={() => showToast("URL guardada!")} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">Guardar</button>
               </div>
             </div>
@@ -239,6 +216,6 @@ export default function AdminDashboard({
           </div>
         )}
       </div>
-    </div>
+    </DashboardShell>
   );
 }

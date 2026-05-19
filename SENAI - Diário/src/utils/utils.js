@@ -4,7 +4,7 @@ export const exportJSON = (data) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `senai_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `somativa_backup_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
 };
 
@@ -21,7 +21,7 @@ export const exportExcelCSV = (alunosParaExportar, data, prefix = 'relatorio') =
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${prefix}_senai_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
+  a.download = `${prefix}_somativa_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 };

@@ -4,7 +4,6 @@ import {
   User, Building, Shield, ChevronRight, ChevronLeft, KeyRound, AlertCircle, Loader2
 } from 'lucide-react';
 import TechBackground from './TechBackground';
-import logoSenai from '../assets/logo-senai.png'; // ajuste o caminho conforme sua estrutura
 
 export default function Login({
   currentUser, setCurrentUser, setGlobalLoading, data,
@@ -19,7 +18,7 @@ export default function Login({
       setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
-        setCurrentUser({ role: 'admin' });
+        setCurrentUser({ role: 'admin', nome: 'Administrador' });
         setLoginError('');
         setAdminPassword('');
         setGlobalLoading(false);
@@ -114,7 +113,7 @@ export default function Login({
           {/* Logo centralizada e alinhada ao topo do card direito */}
           <div className="pt-36">
             <img
-              src={logoSenai}
+              src={"https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png"}
               alt="SENAI SP"
               className="h-16 w-auto object-contain mx-auto"
             />
@@ -127,7 +126,7 @@ export default function Login({
               Educação para a <br />Indústria do Futuro
             </h1>
             <p className="text-base text-slate-300 font-light max-w-md mx-auto leading-relaxed">
-              Portal de Gestão Escolar SENAI-SP. Registre presenças, acompanhe desempenho e conecte alunos às empresas parceiras.
+              Portal de Gestão Escolar Somativa. Registre presenças, acompanhe desempenho e conecte alunos às empresas parceiras.
             </p>
           </div>
         </motion.div>
@@ -165,7 +164,12 @@ export default function Login({
                     variants={itemVariants}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setLoginStep('prof_auth')}
+                    onClick={() => {
+                      setLoginStep('prof_auth');
+                      const firstProf = data?.professores && data.professores.length ? data.professores[0] : null;
+                      setProfEmail(firstProf?.email || 'professor@exemplo.com');
+                      setProfSenha(firstProf?.senha || 'senha123');
+                    }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
@@ -184,7 +188,12 @@ export default function Login({
                     variants={itemVariants}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setLoginStep('empresa_auth')}
+                    onClick={() => {
+                      setLoginStep('empresa_auth');
+                      const firstEmp = data?.empresas && data.empresas.length ? data.empresas[0] : null;
+                      setProfEmail(firstEmp?.email || 'empresa@exemplo.com');
+                      setProfSenha(firstEmp?.senha || 'senha123');
+                    }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
@@ -203,7 +212,10 @@ export default function Login({
                     variants={itemVariants}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setLoginStep('admin_auth')}
+                    onClick={() => {
+                      setLoginStep('admin_auth');
+                      setAdminPassword('admin123');
+                    }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
@@ -220,7 +232,7 @@ export default function Login({
                 </motion.div>
 
                 <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                  <span>© {new Date().getFullYear()} SENAI São Paulo</span>
+                  <span>© {new Date().getFullYear()} Somativa</span>
                   <a href="#" className="hover:text-red-500 transition-colors">Precisa de ajuda?</a>
                 </div>
               </motion.div>
@@ -269,8 +281,8 @@ export default function Login({
                         type="email"
                         value={profEmail}
                         onChange={(e) => setProfEmail(e.target.value)}
-                        placeholder="exemplo@senai.br"
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
+                        placeholder="exemplo@somativa.br"
+                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
                         required
                       />
                     </div>
@@ -289,7 +301,7 @@ export default function Login({
                         value={loginStep === 'admin_auth' ? adminPassword : profSenha}
                         onChange={(e) => loginStep === 'admin_auth' ? setAdminPassword(e.target.value) : setProfSenha(e.target.value)}
                         placeholder="••••••••"
-                        className={`w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition ${
+                        className={`w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition ${
                           loginStep === 'admin_auth' ? 'pl-10' : ''
                         }`}
                         required
@@ -320,7 +332,7 @@ export default function Login({
                 </form>
 
                 <div className="mt-8 pt-6 border-t border-gray-100 flex justify-between text-xs text-gray-400">
-                  <span>© {new Date().getFullYear()} SENAI São Paulo</span>
+                  <span>© {new Date().getFullYear()} Somativa</span>
                   <a href="#" className="hover:text-red-500 transition-colors">Precisa de ajuda?</a>
                 </div>
               </motion.div>

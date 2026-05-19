@@ -1,41 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Loader2, LogOut, Shield, User, Building, CheckCircle2 } from 'lucide-react';
-import { initialData } from './data/initialData';
+import React, { useState, useEffect, useContext } from 'react';
+import { Loader2, LogOut, Shield, User, Building, CheckCircle2, Menu, ChevronLeft, ChevronRight, LayoutDashboard, PieChart, BookOpen, Users, Settings, GraduationCap, ListChecks } from 'lucide-react';
+import { DataContext } from './contexts/DataContext';
+import { AuthContext } from './contexts/AuthContext';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import ProfessorDashboard from './components/ProfessorDashboard';
 import EmpresaDashboard from './components/EmpresaDashboard';
+import Sidebar from './components/Sidebar';
 
 export default function App() {
-  const [data, setData] = useState(() => {
-    try {
-      const savedData = localStorage.getItem('@senai_data');
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (!parsed.empresas || parsed.empresas.length === 0) {
-          parsed.empresas = initialData.empresas;
-        }
-        parsed.alunos = parsed.alunos.map(a => {
-          if (!a.status) return { ...a, status: a.isPresent ? 'presente' : 'pendente', empresaId: a.empresaId || '' };
-          return { ...a, empresaId: a.empresaId || '' };
-        });
-        return parsed;
-      }
-    } catch (error) {
-      console.error("Erro ao carregar dados locais:", error);
-    }
-    return initialData;
-  });
-
-  const [currentUser, setCurrentUser] = useState(null); 
+  const { data, setData } = useContext(DataContext);
+  const { currentUser, setCurrentUser } = useContext(AuthContext);
   const [globalLoading, setGlobalLoading] = useState(true);
   
-  useEffect(() => {
-    localStorage.setItem('@senai_data', JSON.stringify(data));
-  }, [data]);
+
 
   // Login States
-  const [loginStep, setLoginStep] = useState('select'); 
+  const [loginStep, setLoginStep] = useState('select');
   const [adminPassword, setAdminPassword] = useState('');
   const [profEmail, setProfEmail] = useState('');
   const [profSenha, setProfSenha] = useState('');
@@ -46,6 +27,8 @@ export default function App() {
   const [profTab, setProfTab] = useState('dashboard');
   const [empresaTab, setEmpresaTab] = useState('dashboard');
   const [profActiveTurma, setProfActiveTurma] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Utilitários
   const [toast, setToast] = useState('');
@@ -73,6 +56,36 @@ export default function App() {
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
+  };
+
+  const currentRole = currentUser?.role;
+
+  const currentRoleTabs = currentRole === 'admin'
+    ? [
+        { id: 'dashboard', label: 'Visão Geral', icon: PieChart },
+        { id: 'turmas', label: 'Turmas', icon: BookOpen },
+        { id: 'professores', label: 'Professores', icon: Users },
+        { id: 'empresas', label: 'Empresas', icon: Building },
+        { id: 'alunos', label: 'Alunos', icon: GraduationCap },
+        { id: 'config', label: 'Integrações', icon: Settings },
+      ]
+    : currentRole === 'professor'
+      ? [
+          { id: 'dashboard', label: 'Visão Geral', icon: PieChart },
+          { id: 'chamada', label: 'Lista de Chamada', icon: ListChecks },
+        ]
+      : [
+          { id: 'dashboard', label: 'Visão Geral', icon: PieChart },
+          { id: 'alunos', label: 'Meus Aprendizes', icon: Users },
+        ];
+
+  const currentActiveTab = currentRole === 'admin' ? adminTab : currentRole === 'professor' ? profTab : empresaTab;
+
+  const handleSidebarTabClick = (tabId) => {
+    if (currentRole === 'admin') setAdminTab(tabId);
+    if (currentRole === 'professor') setProfTab(tabId);
+    if (currentRole === 'empresa') setEmpresaTab(tabId);
+    setSidebarOpen(false);
   };
 
   // --- TELA DE CARREGAMENTO ---
@@ -114,7 +127,6 @@ export default function App() {
   // --- TELA PRINCIPAL (DASHBOARD) ---
   return (
     <div className="min-h-screen bg-slate-50/50 font-sans text-slate-800">
-      
       {/* Modal Confirm */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
@@ -142,9 +154,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-md hover:bg-slate-100">
+                <Menu className="w-5 h-5" />
+              </button>
               <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI" className="h-8 object-contain" />
               <div className="hidden md:flex h-6 w-px bg-slate-200"></div>
-              <span className="hidden md:block text-slate-500 font-medium tracking-wide text-sm">Gestão Escolar</span>
+              <span className="hidden md:block text-slate-500 font-medium tracking-wide text-sm">{currentUser?.role === 'admin' ? 'Administrador' : currentUser?.role === 'professor' ? 'Professor' : 'Empresa'}</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-slate-50">
@@ -164,7 +179,19 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Sidebar + Backdrop (Mobile) */}
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+        currentActiveTab={currentActiveTab}
+        onTabClick={handleSidebarTabClick}
+      />
+
+      <div className={`fixed top-16 left-0 right-0 bottom-0 bg-black/40 z-20 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)} />
+
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         {currentUser.role === 'admin' && (
           <AdminDashboard 
             data={data} 

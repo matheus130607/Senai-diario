@@ -1,7 +1,9 @@
 // src/components/ProfessorDashboard.jsx
 import React, { useState } from 'react';
+import DashboardShell from './DashboardShell';
 import { PieChart, ListChecks, Calendar, BookOpen, Search, CheckCircle2, XCircle, Clock, FileSpreadsheet, Loader2, Send } from 'lucide-react';
 import DashboardView from './DashboardView';
+import SearchableSelect from './ui/SearchableSelect';
 import { exportExcelCSV } from '../utils/utils';
 
 export default function ProfessorDashboard({ 
@@ -62,30 +64,8 @@ export default function ProfessorDashboard({
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-slate-900">Portal do Professor</h1>
-            <span className="flex items-center gap-1.5 bg-slate-200/70 text-slate-700 px-3 py-1 rounded-full text-xs font-medium border border-slate-300 shadow-sm"><Calendar className="w-3.5 h-3.5" />{dataFormatada}</span>
-          </div>
-          <p className="text-sm text-slate-500">Faça a gestão da assiduidade das suas turmas.</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-t-2xl border-x border-t border-slate-200 px-2 pt-2">
-        <nav className="flex space-x-2 overflow-x-auto">
-          {[
-            { id: 'dashboard', icon: PieChart, label: 'Visão Geral' },
-            { id: 'chamada', icon: ListChecks, label: 'Lista de Chamada' }
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setProfTab(tab.id)} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-xl transition-colors whitespace-nowrap ${profTab === tab.id ? 'bg-red-50 text-red-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}>
-              <tab.icon className="w-4 h-4" /> {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
+    <DashboardShell title="Portal do Professor" subtitle={`Faça a gestão da assiduidade das suas turmas. ${dataFormatada ? dataFormatada : ''}`}>
+      
       <div className="bg-white border border-t-0 border-slate-200 rounded-b-2xl shadow-sm min-h-[600px] flex flex-col overflow-hidden">
         {profTab === 'dashboard' && (
           <DashboardView disponiveisTurmas={data.turmas.filter(t => currentUser.turmas.includes(t.id))} data={data} titleContext="Turma" />
@@ -99,15 +79,15 @@ export default function ProfessorDashboard({
                 <div className="px-6 py-4 border-b border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-slate-500" />
-                    <select value={profActiveTurma} onChange={(e) => setProfActiveTurma(e.target.value)} className="bg-transparent font-semibold text-slate-800 outline-none text-lg cursor-pointer hover:text-red-600">
-                      {data.turmas.filter(t => currentUser.turmas.includes(t.id)).map(t => <option key={`sel-${t.id}`} value={t.id}>{t.nome}</option>)}
-                    </select>
+                    <div className="w-full md:w-64">
+                      <SearchableSelect options={data.turmas.filter(t => currentUser.turmas.includes(t.id))} value={profActiveTurma} onChange={(v) => setProfActiveTurma(v)} optionLabelKey="nome" optionValueKey="id" placeholder="Selecionar Turma" />
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 w-full md:w-auto">
                     <button onClick={() => exportExcelCSV(data.alunos.filter(a => a.turmaId === profActiveTurma), data, 'chamada_turma')} className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border border-emerald-300"><FileSpreadsheet className="w-4 h-4" /> Excel</button>
                     <div className="relative w-full md:w-64">
                       <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                      <input type="text" placeholder="Pesquisar aluno..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none" />
+                      <input type="text" placeholder="Pesquisar aluno..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-red-500 outline-none" />
                     </div>
                   </div>
                 </div>
@@ -133,10 +113,11 @@ export default function ProfessorDashboard({
                 </div>
 
                 {data.alunos.filter(a => a.turmaId === profActiveTurma).length > 0 && (
-                  <div className="bg-white border-t border-slate-200 p-5">
-                    <button onClick={submitChamada} disabled={isSending} className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-all text-lg ${isSending ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
-                      {isSending ? <><Loader2 className="w-5 h-5 animate-spin" /> Enviando...</> : <><Send className="w-5 h-5" /> Submeter Chamada</>}
-                    </button>
+                  <div className="bg-white border-t border-slate-200 p-4">
+                    <div className="flex justify-end">
+                      <button onClick={submitChamada} disabled={isSending} className={`w-full md:w-auto py-3 px-5 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors text-base ${isSending ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
+                        {isSending ? <><Loader2 className="w-5 h-5 animate-spin" /> Enviando...</> : <><Send className="w-5 h-5" /> Submeter Chamada</>}</button>
+                    </div>
                   </div>
                 )}
               </>
@@ -144,6 +125,6 @@ export default function ProfessorDashboard({
           </div>
         )}
       </div>
-    </div>
+    </DashboardShell>
   );
 }

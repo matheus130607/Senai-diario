@@ -1,5 +1,6 @@
 // src/components/DashboardView.jsx
 import React, { useState, useEffect } from 'react';
+import SearchableSelect from './ui/SearchableSelect';
 import { Activity, TrendingUp, BookOpen, Users, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 
 export default function DashboardView({ disponiveisTurmas, data, titleContext = "Turma" }) {
@@ -46,7 +47,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="card card-padding flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="bg-red-50 p-3 rounded-xl">
             <Activity className="w-6 h-6 text-red-600" />
@@ -56,25 +57,19 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
             <p className="text-sm text-slate-500">Selecione a turma para visualizar relatórios detalhados.</p>
           </div>
         </div>
-        <select 
-          value={selectedTurmaDashboard} 
-          onChange={(e) => setSelectedTurmaDashboard(e.target.value)}
-          className="w-full md:w-80 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:ring-2 focus:ring-red-500 outline-none transition-all cursor-pointer"
-        >
-          {disponiveisTurmas.map(t => (
-            <option key={`dash-${t.id}`} value={t.id}>{t.nome}</option>
-          ))}
-        </select>
+        <div className="w-full md:w-80">
+          <SearchableSelect options={disponiveisTurmas} value={selectedTurmaDashboard} onChange={(v) => setSelectedTurmaDashboard(v)} optionLabelKey="nome" optionValueKey="id" placeholder={`Selecionar ${titleContext}`} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group">
+        <div className="card card-padding group">
           <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Total de Alunos</p>
           <span className="text-4xl font-bold text-slate-800">{total}</span>
           <div className="w-full bg-slate-100 h-1.5 mt-4 rounded-full"><div className="bg-slate-400 h-full w-full"></div></div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group">
+        <div className="card card-padding group">
           <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Presentes</p>
           <div className="flex items-end gap-3">
             <span className="text-4xl font-bold text-emerald-600">{presentes}</span>
@@ -83,7 +78,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
           <div className="w-full bg-slate-100 h-1.5 mt-4 rounded-full"><div className="bg-emerald-500 h-full" style={{ width: `${percentualPresente}%` }}></div></div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group">
+        <div className="card card-padding group">
           <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Faltas Registadas</p>
           <div className="flex items-end gap-3">
             <span className="text-4xl font-bold text-red-600">{faltas}</span>
@@ -92,7 +87,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
           <div className="w-full bg-slate-100 h-1.5 mt-4 rounded-full"><div className="bg-red-500 h-full" style={{ width: `${percentualFaltas}%` }}></div></div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group">
+        <div className="card card-padding group">
           <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-1">Pendentes</p>
           <span className="text-4xl font-bold text-amber-500">{pendentes}</span>
           <div className="w-full bg-slate-100 h-1.5 mt-4 rounded-full">
@@ -121,7 +116,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
               />
             </svg>
             <div className="absolute">
-              <span className={`text-4xl font-black ${isAbaixoMeta ? 'text-red-600' : 'text-emerald-600'}`}>{percentualPresente}%</span>
+              <span className={`text-3xl font-extrabold ${isAbaixoMeta ? 'text-red-600' : 'text-emerald-600'}`}>{percentualPresente}%</span>
             </div>
           </div>
 
