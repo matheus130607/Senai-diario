@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Loader2, LogOut, Shield, User, Building, CheckCircle2, Menu, ChevronLeft, ChevronRight, LayoutDashboard, PieChart, BookOpen, Users, Settings, GraduationCap, ListChecks } from 'lucide-react';
+import { useState, useEffect, useContext } from 'react';
+import { Loader2, LogOut, Shield, User, Building, CheckCircle2, Menu } from 'lucide-react';
 import { DataContext } from './contexts/DataContext';
 import { AuthContext } from './contexts/AuthContext';
 import Login from './components/Login';
@@ -9,7 +9,16 @@ import EmpresaDashboard from './components/EmpresaDashboard';
 import Sidebar from './components/Sidebar';
 
 export default function App() {
-  const { data, setData } = useContext(DataContext);
+  const {
+    data,
+    setData,
+    isDataLoading,
+    syncStatus,
+    syncError,
+    isSupabaseConfigured,
+    saveDataNow,
+    reloadData,
+  } = useContext(DataContext);
   const { currentUser, setCurrentUser } = useContext(AuthContext);
   const [globalLoading, setGlobalLoading] = useState(true);
   
@@ -60,25 +69,6 @@ export default function App() {
 
   const currentRole = currentUser?.role;
 
-  const currentRoleTabs = currentRole === 'admin'
-    ? [
-        { id: 'dashboard', label: 'Visão Geral', icon: PieChart },
-        { id: 'turmas', label: 'Turmas', icon: BookOpen },
-        { id: 'professores', label: 'Professores', icon: Users },
-        { id: 'empresas', label: 'Empresas', icon: Building },
-        { id: 'alunos', label: 'Alunos', icon: GraduationCap },
-        { id: 'config', label: 'Integrações', icon: Settings },
-      ]
-    : currentRole === 'professor'
-      ? [
-          { id: 'dashboard', label: 'Visão Geral', icon: PieChart },
-          { id: 'chamada', label: 'Lista de Chamada', icon: ListChecks },
-        ]
-      : [
-          { id: 'dashboard', label: 'Visão Geral', icon: PieChart },
-          { id: 'alunos', label: 'Meus Aprendizes', icon: Users },
-        ];
-
   const currentActiveTab = currentRole === 'admin' ? adminTab : currentRole === 'professor' ? profTab : empresaTab;
 
   const handleSidebarTabClick = (tabId) => {
@@ -89,7 +79,7 @@ export default function App() {
   };
 
   // --- TELA DE CARREGAMENTO ---
-  if (globalLoading) {
+  if (globalLoading || isDataLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center">
@@ -201,6 +191,11 @@ export default function App() {
             setAdminTab={setAdminTab}
             showToast={showToast}
             requestConfirm={requestConfirm}
+            syncStatus={syncStatus}
+            syncError={syncError}
+            isSupabaseConfigured={isSupabaseConfigured}
+            saveDataNow={saveDataNow}
+            reloadData={reloadData}
           />
         )}
 
@@ -216,6 +211,8 @@ export default function App() {
             showToast={showToast}
             requestConfirm={requestConfirm}
             dataFormatada={dataFormatada}
+            saveDataNow={saveDataNow}
+            isSupabaseConfigured={isSupabaseConfigured}
           />
         )}
 

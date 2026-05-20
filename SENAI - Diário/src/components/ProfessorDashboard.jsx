@@ -1,14 +1,15 @@
 // src/components/ProfessorDashboard.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DashboardShell from './DashboardShell';
-import { PieChart, ListChecks, Calendar, BookOpen, Search, CheckCircle2, XCircle, Clock, FileSpreadsheet, Loader2, Send } from 'lucide-react';
+import { BookOpen, Search, CheckCircle2, XCircle, FileSpreadsheet, Loader2, Send } from 'lucide-react';
 import DashboardView from './DashboardView';
 import SearchableSelect from './ui/SearchableSelect';
 import { exportExcelCSV } from '../utils/utils';
 
 export default function ProfessorDashboard({ 
-  data, setData, currentUser, profTab, setProfTab, 
-  profActiveTurma, setProfActiveTurma, showToast, requestConfirm, dataFormatada
+  data, setData, currentUser, profTab, 
+  profActiveTurma, setProfActiveTurma, showToast, requestConfirm, dataFormatada,
+  saveDataNow, isSupabaseConfigured
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -20,36 +21,25 @@ export default function ProfessorDashboard({
     }));
   };
 
-  const executarEnvioGoogle = async (alunosTurmaAtual) => {
+  const executarEnvioSupabase = async (alunosTurmaAtual) => {
     setIsSending(true);
     try {
-      let sucessos = 0;
-      for (const aluno of alunosTurmaAtual) {
-        const params = new URLSearchParams({
-          evento: 'registro_presenca',
-          alunoId: aluno.id,
-          alunoNome: aluno.nome,
-          alunoEmail: aluno.email,
-          turma: data.turmas.find(t => t.id === aluno.turmaId)?.nome || 'Desconhecida',
-          presente: aluno.status === 'presente' 
-        });
-
-        const finalUrl = `${data.config.webhookUrl}?${params.toString()}`;
-        await fetch(finalUrl, { method: 'GET', mode: 'no-cors' });
-        sucessos++;
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase não configurado.');
       }
-      showToast(`Chamada enviada! (${sucessos} alunos)`);
+      await saveDataNow(data);
+      showToast(`Chamada sincronizada! (${alunosTurmaAtual.length} alunos)`);
     } catch (err) {
-      console.error("Erro ao enviar:", err);
-      alert("Erro de conexão.");
+      console.error("Erro ao sincronizar chamada:", err);
+      alert("Erro ao sincronizar com o Supabase.");
     } finally {
       setIsSending(false);
     }
   };
 
   const submitChamada = () => {
-    if (!data.config.webhookUrl) {
-      alert("Webhook não configurado pelo Administrador.");
+    if (!isSupabaseConfigured) {
+      alert("Supabase não configurado pelo Administrador.");
       return;
     }
     const alunosTurmaAtual = data.alunos.filter(a => a.turmaId === profActiveTurma);
@@ -57,9 +47,9 @@ export default function ProfessorDashboard({
 
     const pendentes = alunosTurmaAtual.filter(a => a.status === 'pendente').length;
     if (pendentes > 0) {
-      requestConfirm("Chamada Incompleta", `Existem ${pendentes} alunos pendentes. Enviar mesmo assim?`, () => executarEnvioGoogle(alunosTurmaAtual));
+      requestConfirm("Chamada Incompleta", `Existem ${pendentes} alunos pendentes. Enviar mesmo assim?`, () => executarEnvioSupabase(alunosTurmaAtual));
     } else {
-      executarEnvioGoogle(alunosTurmaAtual);
+      executarEnvioSupabase(alunosTurmaAtual);
     }
   };
 
@@ -116,7 +106,7 @@ export default function ProfessorDashboard({
                   <div className="bg-white border-t border-slate-200 p-4">
                     <div className="flex justify-end">
                       <button onClick={submitChamada} disabled={isSending} className={`w-full md:w-auto py-3 px-5 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors text-base ${isSending ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
-                        {isSending ? <><Loader2 className="w-5 h-5 animate-spin" /> Enviando...</> : <><Send className="w-5 h-5" /> Submeter Chamada</>}</button>
+                        {isSending ? <><Loader2 className="w-5 h-5 animate-spin" /> Sincronizando...</> : <><Send className="w-5 h-5" /> Submeter Chamada</>}</button>
                     </div>
                   </div>
                 )}

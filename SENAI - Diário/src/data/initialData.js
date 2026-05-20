@@ -31,6 +31,6 @@ export const initialData = {
     }
   ],
   config: {
-    webhookUrl: ''
+    provider: 'supabase'
   }
 };
