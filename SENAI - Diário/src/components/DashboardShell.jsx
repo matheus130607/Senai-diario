@@ -1,5 +1,3 @@
-import React from 'react';
-
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Bom dia';
@@ -10,12 +8,12 @@ function getGreeting() {
 function formatFullDate() {
   try {
     return new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  } catch (e) {
+  } catch {
     return '';
   }
 }
 
-export default function DashboardShell({ title, subtitle, children }) {
+export default function DashboardShell({ children }) {
   const greeting = getGreeting();
   const fullDate = formatFullDate();
 

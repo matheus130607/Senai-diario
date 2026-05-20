@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { LayoutDashboard, ChevronLeft, ChevronRight, Menu, PieChart, BookOpen, Users, Building, GraduationCap, Settings, ListChecks } from 'lucide-react';
+import { useContext } from 'react';
+import { LayoutDashboard, ChevronLeft, ChevronRight, PieChart, BookOpen, Users, Building, GraduationCap, Settings, ListChecks } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed, currentActiveTab, onTabClick }) {

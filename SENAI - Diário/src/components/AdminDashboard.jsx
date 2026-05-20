@@ -1,14 +1,23 @@
 // src/components/AdminDashboard.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DashboardShell from './DashboardShell';
-import { PieChart, BookOpen, User, Building, GraduationCap, Settings, Edit, Trash2, CheckSquare, Square, Download, FileSpreadsheet, LinkIcon } from 'lucide-react';
+import { BookOpen, User, Building, Settings, Edit, Trash2, CheckSquare, Square, Download, FileSpreadsheet, Database, RefreshCw } from 'lucide-react';
 import DashboardView from './DashboardView';
 import SearchableSelect from './ui/SearchableSelect';
 import { useCrudOperations } from '../hooks/useCrudOperations';
 import { exportJSON, exportExcelCSV } from '../utils/utils';
 
 export default function AdminDashboard({ 
-  data, setData, currentUser, adminTab, setAdminTab, showToast, requestConfirm 
+  data,
+  setData,
+  adminTab,
+  showToast,
+  requestConfirm,
+  syncStatus = 'not_configured',
+  syncError = '',
+  isSupabaseConfigured = false,
+  saveDataNow,
+  reloadData,
 }) {
   const [editingTurma, setEditingTurma] = useState(null);
   const [editingProfessor, setEditingProfessor] = useState(null);
@@ -21,6 +30,34 @@ export default function AdminDashboard({
   const [formAluno, setFormAluno] = useState({ nome: '', cpf: '', telefone: '', email: '', turmaId: '', empresaId: '' });
 
   const crudOps = useCrudOperations(data, setData, showToast, requestConfirm);
+
+  const syncLabels = {
+    loading: 'Carregando',
+    saving: 'Salvando',
+    synced: 'Sincronizado',
+    error: 'Erro',
+    not_configured: 'Nao configurado',
+  };
+
+  const handleManualSync = async () => {
+    try {
+      await saveDataNow?.(data);
+      showToast("Dados sincronizados com Supabase!");
+    } catch (error) {
+      console.error('Erro ao sincronizar manualmente:', error);
+      alert('Nao foi possivel sincronizar com o Supabase.');
+    }
+  };
+
+  const handleReloadData = async () => {
+    try {
+      await reloadData?.();
+      showToast("Dados recarregados do Supabase!");
+    } catch (error) {
+      console.error('Erro ao recarregar dados:', error);
+      alert('Nao foi possivel recarregar os dados do Supabase.');
+    }
+  };
 
   const toggleProfTurma = (turmaId) => {
     setFormProf(prev => {
@@ -198,16 +235,35 @@ export default function AdminDashboard({
         {adminTab === 'config' && (
           <div className="space-y-8 max-w-3xl p-6">
             <div className="bg-white border border-slate-200 rounded-2xl p-6">
-              <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Integração Google</h3>
-              <p className="text-xs text-slate-500 mb-4">Insira o Webhook que receberá a requisição quando o professor submeter a chamada.</p>
-              <div className="flex gap-2">
-                <input type="url" value={data.config.webhookUrl} onChange={e => setData({...data, config: { webhookUrl: e.target.value }})} placeholder="https://script.google.com/macros/s/..." className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm bg-white" />
-                <button onClick={() => showToast("URL guardada!")} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900">Guardar</button>
+              <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2"><Database className="w-4 h-4"/> Integração Supabase</h3>
+              <p className="text-xs text-slate-500 mb-4">Banco principal conectado por variáveis de ambiente do Vite.</p>
+              <div className="rounded-xl border border-slate-200 overflow-hidden mb-4">
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+                  <span className="text-xs font-semibold text-slate-500 uppercase">Estado</span>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : syncStatus === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                    {syncLabels[syncStatus] || syncStatus}
+                  </span>
+                </div>
+                <div className="px-4 py-3 text-xs text-slate-600 grid gap-2">
+                  <div className="flex justify-between gap-3">
+                    <span>URL</span>
+                    <span className="font-mono text-slate-500">{isSupabaseConfigured ? 'VITE_SUPABASE_URL configurada' : 'VITE_SUPABASE_URL ausente'}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span>Chave anônima</span>
+                    <span className="font-mono text-slate-500">{isSupabaseConfigured ? 'VITE_SUPABASE_ANON_KEY configurada' : 'VITE_SUPABASE_ANON_KEY ausente'}</span>
+                  </div>
+                </div>
+              </div>
+              {syncError && <p className="text-xs text-red-600 mb-4">{syncError}</p>}
+              <div className="flex flex-wrap gap-2">
+                <button onClick={handleManualSync} disabled={!isSupabaseConfigured} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"><Database className="w-4 h-4" /> Sincronizar agora</button>
+                <button onClick={handleReloadData} disabled={!isSupabaseConfigured} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"><RefreshCw className="w-4 h-4" /> Recarregar dados</button>
               </div>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
               <h3 className="text-sm font-bold text-blue-900 mb-1 flex items-center gap-2"><Settings className="w-4 h-4"/> Backup de Dados</h3>
-              <p className="text-xs text-blue-700 mb-4">Os dados estão guardados automaticamente na cache do navegador (LocalStorage).</p>
+              <p className="text-xs text-blue-700 mb-4">Os dados são sincronizados no Supabase. Mantenha estes ficheiros apenas como cópia de segurança local.</p>
               <div className="flex flex-wrap gap-3">
                 <button onClick={() => exportJSON(data)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> Backup (.json)</button>
                 <button onClick={() => exportExcelCSV(data.alunos, data, 'relatorio_completo')} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4" /> Excel (.csv)</button>

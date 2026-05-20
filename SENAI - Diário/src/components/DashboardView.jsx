@@ -1,16 +1,13 @@
 // src/components/DashboardView.jsx
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import SearchableSelect from './ui/SearchableSelect';
-import { Activity, TrendingUp, BookOpen, Users, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Activity, BookOpen, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 export default function DashboardView({ disponiveisTurmas, data, titleContext = "Turma" }) {
   const [selectedTurmaDashboard, setSelectedTurmaDashboard] = useState('');
-
-  useEffect(() => {
-    if (disponiveisTurmas.length > 0 && !selectedTurmaDashboard) {
-      setSelectedTurmaDashboard(disponiveisTurmas[0].id);
-    }
-  }, [disponiveisTurmas, selectedTurmaDashboard]);
+  const selectedTurmaId = disponiveisTurmas.some(t => t.id === selectedTurmaDashboard)
+    ? selectedTurmaDashboard
+    : disponiveisTurmas[0]?.id || '';
 
   if (disponiveisTurmas.length === 0) {
     return (
@@ -22,11 +19,11 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
     );
   }
 
-  const turmaAtual = disponiveisTurmas.find(t => t.id === selectedTurmaDashboard);
+  const turmaAtual = disponiveisTurmas.find(t => t.id === selectedTurmaId);
   const turmaNome = turmaAtual?.nome || titleContext;
-  const alunosDaTurma = selectedTurmaDashboard === 'all_empresa' 
+  const alunosDaTurma = selectedTurmaId === 'all_empresa' 
     ? data.alunos 
-    : data.alunos.filter(a => a.turmaId === selectedTurmaDashboard);
+    : data.alunos.filter(a => a.turmaId === selectedTurmaId);
   
   const total = alunosDaTurma.length;
   const presentes = alunosDaTurma.filter(a => a.status === 'presente').length;
@@ -58,7 +55,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
           </div>
         </div>
         <div className="w-full md:w-80">
-          <SearchableSelect options={disponiveisTurmas} value={selectedTurmaDashboard} onChange={(v) => setSelectedTurmaDashboard(v)} optionLabelKey="nome" optionValueKey="id" placeholder={`Selecionar ${titleContext}`} />
+          <SearchableSelect options={disponiveisTurmas} value={selectedTurmaId} onChange={(v) => setSelectedTurmaDashboard(v)} optionLabelKey="nome" optionValueKey="id" placeholder={`Selecionar ${titleContext}`} />
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 
 const TechBackground = () => {
   const canvasRef = useRef(null);
@@ -182,6 +182,8 @@ const TechBackground = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
+  // Canvas particles are intentionally initialized once; resize keeps dimensions in sync.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

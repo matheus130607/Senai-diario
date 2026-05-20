@@ -1,12 +1,11 @@
 // src/components/EmpresaDashboard.jsx
-import React, { useState } from 'react';
 import DashboardShell from './DashboardShell';
-import { PieChart, Users, Calendar, CheckCircle2, XCircle, Clock, FileSpreadsheet } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, FileSpreadsheet } from 'lucide-react';
 import DashboardView from './DashboardView';
 import { exportExcelCSV } from '../utils/utils';
 
 export default function EmpresaDashboard({ 
-  data, currentUser, empresaTab, setEmpresaTab, dataFormatada
+  data, currentUser, empresaTab, dataFormatada
 }) {
   const alunosEmpresa = data.alunos.filter(a => a.empresaId === currentUser.id);
 
