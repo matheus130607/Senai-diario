@@ -16,8 +16,8 @@ export default function App() {
     syncStatus,
     syncError,
     isSupabaseConfigured,
-    saveDataNow,
     reloadData,
+    saveAttendance,
   } = useContext(DataContext);
   const { currentUser, setCurrentUser } = useContext(AuthContext);
   const [globalLoading, setGlobalLoading] = useState(true);
@@ -194,7 +194,6 @@ export default function App() {
             syncStatus={syncStatus}
             syncError={syncError}
             isSupabaseConfigured={isSupabaseConfigured}
-            saveDataNow={saveDataNow}
             reloadData={reloadData}
           />
         )}
@@ -211,7 +210,7 @@ export default function App() {
             showToast={showToast}
             requestConfirm={requestConfirm}
             dataFormatada={dataFormatada}
-            saveDataNow={saveDataNow}
+            saveAttendance={saveAttendance}
             isSupabaseConfigured={isSupabaseConfigured}
           />
         )}

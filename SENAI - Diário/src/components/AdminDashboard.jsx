@@ -16,7 +16,6 @@ export default function AdminDashboard({
   syncStatus = 'not_configured',
   syncError = '',
   isSupabaseConfigured = false,
-  saveDataNow,
   reloadData,
 }) {
   const [editingTurma, setEditingTurma] = useState(null);
@@ -41,7 +40,7 @@ export default function AdminDashboard({
 
   const handleManualSync = async () => {
     try {
-      await saveDataNow?.(data);
+      await reloadData?.();
       showToast("Dados sincronizados com Supabase!");
     } catch (error) {
       console.error('Erro ao sincronizar manualmente:', error);

@@ -11,32 +11,50 @@ export default function Login({
   profEmail, setProfEmail, profSenha, setProfSenha, loginError, setLoginError
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+  const normalizePassword = (value) => String(value || '').trim();
 
   const handleAdminLogin = async (e) => {
     e.preventDefault();
-    if (adminPassword === 'admin123') {
+    const email = normalizeEmail(profEmail);
+    const password = normalizePassword(adminPassword);
+    const admin = data.administradores?.find(admin => {
+      const adminEmail = normalizeEmail(admin.email);
+      return normalizePassword(admin.senha) === password && (!adminEmail || adminEmail === email);
+    });
+    if (admin) {
       setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
-        setCurrentUser({ role: 'admin', nome: 'Administrador' });
+        setCurrentUser({
+          role: 'admin',
+          id: admin.id,
+          nome: admin.nome || 'Administrador',
+          email: admin.email,
+        });
         setLoginError('');
+        setProfEmail('');
         setAdminPassword('');
         setGlobalLoading(false);
         setIsSubmitting(false);
       }, 800);
     } else {
-      setLoginError('Senha de administrador incorreta.');
+      setLoginError('E-mail ou palavra-passe de administrador incorretos.');
     }
   };
 
   const handleProfLogin = async (e) => {
     e.preventDefault();
-    const prof = data.professores.find(p => p.email === profEmail && p.senha === profSenha);
+    const email = normalizeEmail(profEmail);
+    const password = normalizePassword(profSenha);
+    const prof = data.professores.find(p => normalizeEmail(p.email) === email && normalizePassword(p.senha) === password);
     if (prof) {
       setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
-        setCurrentUser({ role: 'professor', ...prof });
+        const professorSemSenha = { ...prof };
+        delete professorSemSenha.senha;
+        setCurrentUser({ role: 'professor', ...professorSemSenha });
         setLoginError('');
         setProfEmail('');
         setProfSenha('');
@@ -50,12 +68,16 @@ export default function Login({
 
   const handleEmpresaLogin = async (e) => {
     e.preventDefault();
-    const emp = data.empresas.find(emp => emp.email === profEmail && emp.senha === profSenha);
+    const email = normalizeEmail(profEmail);
+    const password = normalizePassword(profSenha);
+    const emp = data.empresas.find(emp => normalizeEmail(emp.email) === email && normalizePassword(emp.senha) === password);
     if (emp) {
       setIsSubmitting(true);
       setGlobalLoading(true);
       setTimeout(() => {
-        setCurrentUser({ role: 'empresa', ...emp });
+        const empresaSemSenha = { ...emp };
+        delete empresaSemSenha.senha;
+        setCurrentUser({ role: 'empresa', ...empresaSemSenha });
         setLoginError('');
         setProfEmail('');
         setProfSenha('');
@@ -166,9 +188,8 @@ export default function Login({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setLoginStep('prof_auth');
-                      const firstProf = data?.professores && data.professores.length ? data.professores[0] : null;
-                      setProfEmail(firstProf?.email || 'professor@exemplo.com');
-                      setProfSenha(firstProf?.senha || 'senha123');
+                      setProfEmail('');
+                      setProfSenha('');
                     }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
@@ -190,9 +211,8 @@ export default function Login({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setLoginStep('empresa_auth');
-                      const firstEmp = data?.empresas && data.empresas.length ? data.empresas[0] : null;
-                      setProfEmail(firstEmp?.email || 'empresa@exemplo.com');
-                      setProfSenha(firstEmp?.senha || 'senha123');
+                      setProfEmail('');
+                      setProfSenha('');
                     }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
@@ -214,7 +234,8 @@ export default function Login({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setLoginStep('admin_auth');
-                      setAdminPassword('admin123');
+                      setProfEmail('');
+                      setAdminPassword('');
                     }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
@@ -272,21 +293,20 @@ export default function Login({
                     handleEmpresaLogin
                   }
                 >
-                  {loginStep !== 'admin_auth' && (
-                    <div className="mb-4">
-                      <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
-                        E-mail Corporativo
-                      </label>
-                      <input
-                        type="email"
-                        value={profEmail}
-                        onChange={(e) => setProfEmail(e.target.value)}
-                        placeholder="exemplo@somativa.br"
-                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
-                        required
-                      />
-                    </div>
-                  )}
+                  <div className="mb-4">
+                    <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
+                      E-mail Corporativo
+                    </label>
+                    <input
+                      type="email"
+                      value={profEmail}
+                      onChange={(e) => setProfEmail(e.target.value)}
+                      placeholder="exemplo@somativa.br"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition"
+                      required
+                      autoFocus
+                    />
+                  </div>
 
                   <div className="mb-6">
                     <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">
@@ -305,7 +325,6 @@ export default function Login({
                           loginStep === 'admin_auth' ? 'pl-10' : ''
                         }`}
                         required
-                        autoFocus={loginStep === 'admin_auth'}
                       />
                     </div>
                     {loginError && (

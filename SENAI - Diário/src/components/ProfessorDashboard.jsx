@@ -9,10 +9,11 @@ import { exportExcelCSV } from '../utils/utils';
 export default function ProfessorDashboard({ 
   data, setData, currentUser, profTab, 
   profActiveTurma, setProfActiveTurma, showToast, requestConfirm, dataFormatada,
-  saveDataNow, isSupabaseConfigured
+  saveAttendance, isSupabaseConfigured
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const currentUserTurmas = Array.isArray(currentUser.turmas) ? currentUser.turmas : [];
 
   const setPresenceLocal = (alunoId, status) => {
     setData(prev => ({
@@ -27,7 +28,11 @@ export default function ProfessorDashboard({
       if (!isSupabaseConfigured) {
         throw new Error('Supabase não configurado.');
       }
-      await saveDataNow(data);
+      await saveAttendance({
+        alunos: alunosTurmaAtual,
+        turmaId: profActiveTurma,
+        professorId: currentUser.id,
+      });
       showToast(`Chamada sincronizada! (${alunosTurmaAtual.length} alunos)`);
     } catch (err) {
       console.error("Erro ao sincronizar chamada:", err);
@@ -58,11 +63,11 @@ export default function ProfessorDashboard({
       
       <div className="bg-white border border-t-0 border-slate-200 rounded-b-2xl shadow-sm min-h-[600px] flex flex-col overflow-hidden">
         {profTab === 'dashboard' && (
-          <DashboardView disponiveisTurmas={data.turmas.filter(t => currentUser.turmas.includes(t.id))} data={data} titleContext="Turma" />
+          <DashboardView disponiveisTurmas={data.turmas.filter(t => currentUserTurmas.includes(t.id))} data={data} titleContext="Turma" />
         )}
         {profTab === 'chamada' && (
           <div className="flex flex-col h-full bg-slate-50 flex-1">
-            {currentUser.turmas.length === 0 ? (
+            {currentUserTurmas.length === 0 ? (
               <div className="p-12 text-center text-slate-500">Não está vinculado a nenhuma turma neste momento.</div>
             ) : (
               <>
@@ -70,7 +75,7 @@ export default function ProfessorDashboard({
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-slate-500" />
                     <div className="w-full md:w-64">
-                      <SearchableSelect options={data.turmas.filter(t => currentUser.turmas.includes(t.id))} value={profActiveTurma} onChange={(v) => setProfActiveTurma(v)} optionLabelKey="nome" optionValueKey="id" placeholder="Selecionar Turma" />
+                      <SearchableSelect options={data.turmas.filter(t => currentUserTurmas.includes(t.id))} value={profActiveTurma} onChange={(v) => setProfActiveTurma(v)} optionLabelKey="nome" optionValueKey="id" placeholder="Selecionar Turma" />
                     </div>
                   </div>
                   <div className="flex items-center gap-3 w-full md:w-auto">
