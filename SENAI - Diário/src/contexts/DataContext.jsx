@@ -2,6 +2,7 @@ import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { initialData } from '../data/initialData';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
+  getTodayAttendanceDate,
   loadSupabaseData,
   saveAttendanceRecords,
   subscribeToSupabaseData,
@@ -60,8 +61,9 @@ export function DataProvider({ children }) {
   const [syncStatus, setSyncStatus] = useState(isSupabaseConfigured ? 'loading' : 'not_configured');
   const [syncError, setSyncError] = useState('');
   const reloadTimeout = useRef(null);
+  const attendanceDateRef = useRef(getTodayAttendanceDate());
 
-  const reloadData = useCallback(async ({ silent = false } = {}) => {
+  const reloadData = useCallback(async ({ silent = false, attendanceDate } = {}) => {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase nao configurado.');
     }
@@ -70,7 +72,9 @@ export function DataProvider({ children }) {
       if (!silent) setSyncStatus('loading');
       setSyncError('');
 
-      const remoteData = await loadSupabaseData();
+      const dateToLoad = attendanceDate || attendanceDateRef.current || getTodayAttendanceDate();
+      attendanceDateRef.current = dateToLoad;
+      const remoteData = await loadSupabaseData(dateToLoad);
       const normalized = normalizeData(remoteData);
       setData(normalized);
       setSyncStatus('synced');
@@ -118,7 +122,7 @@ export function DataProvider({ children }) {
         if (reloadTimeout.current) clearTimeout(reloadTimeout.current);
         reloadTimeout.current = setTimeout(async () => {
           try {
-            await reloadData({ silent: true });
+            await reloadData({ silent: true, attendanceDate: attendanceDateRef.current });
           } catch (error) {
             console.error('Erro ao sincronizar dados do Supabase:', error);
             setSyncError(error.message || 'Erro ao sincronizar dados do Supabase.');
@@ -144,7 +148,7 @@ export function DataProvider({ children }) {
 
     try {
       await saveAttendanceRecords({ alunos, turmaId, professorId, date });
-      return await reloadData({ silent: true });
+      return await reloadData({ silent: true, attendanceDate: date });
     } catch (error) {
       setSyncError(error.message || 'Erro ao salvar presencas no Supabase.');
       setSyncStatus('error');

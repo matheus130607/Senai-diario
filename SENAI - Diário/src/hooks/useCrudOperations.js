@@ -11,11 +11,29 @@ import {
   saveTurmaRecord,
 } from '../services/supabaseDataService';
 
+export const emptyTurmaForm = {
+  nome: '',
+  dataInicio: '',
+  dataFim: '',
+  status: 'Ativo',
+  quantidadeAulas: '',
+};
+
+export const emptyEmpresaForm = {
+  nome: '',
+  cnpj: '',
+  endereco: '',
+  email: '',
+  senha: '',
+};
+
 export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
   const showCrudError = (action, error) => {
     console.error(`Erro ao ${action}:`, error);
-    alert('Nao foi possivel salvar a operacao no Supabase.');
+    alert(`Nao foi possivel salvar a operacao no Supabase: ${error.message || 'verifique o console para mais detalhes.'}`);
   };
+  const isTurmaVinculavel = (turma) => ['Ativo', 'Pausado'].includes(turma?.status);
+  const turmasVinculaveisIds = new Set(data.turmas.filter(isTurmaVinculavel).map((turma) => turma.id));
 
   // TURMAS
   const saveTurma = async (e, editingTurma, formTurma, setEditingTurma, setFormTurma) => {
@@ -37,7 +55,7 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
       }
 
       showToast(editingTurma ? 'Turma atualizada!' : 'Turma criada!');
-      setFormTurma({ nome: '' });
+      setFormTurma(emptyTurmaForm);
       setEditingTurma(null);
     } catch (error) {
       showCrudError('salvar turma', error);
@@ -71,8 +89,15 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
     e.preventDefault();
 
     try {
+      const professorParaSalvar = {
+        ...formProf,
+        turmas: Array.isArray(formProf.turmas)
+          ? formProf.turmas.filter((turmaId) => turmasVinculaveisIds.has(turmaId))
+          : [],
+      };
+
       if (isSupabaseConfigured) {
-        const savedProfessor = await saveProfessorRecord({ id: editingProfessor, ...formProf });
+        const savedProfessor = await saveProfessorRecord({ id: editingProfessor, ...professorParaSalvar });
         setData(prev => ({
           ...prev,
           professores: editingProfessor
@@ -80,9 +105,9 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
             : [savedProfessor, ...prev.professores],
         }));
       } else if (editingProfessor) {
-        setData(prev => ({ ...prev, professores: prev.professores.map(p => p.id === editingProfessor ? { ...p, ...formProf } : p) }));
+        setData(prev => ({ ...prev, professores: prev.professores.map(p => p.id === editingProfessor ? { ...p, ...professorParaSalvar } : p) }));
       } else {
-        setData(prev => ({ ...prev, professores: [{ id: 'p' + Date.now(), ...formProf }, ...prev.professores] }));
+        setData(prev => ({ ...prev, professores: [{ id: 'p' + Date.now(), ...professorParaSalvar }, ...prev.professores] }));
       }
 
       showToast(editingProfessor ? 'Professor atualizado!' : 'Professor criado!');
@@ -127,7 +152,7 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
       }
 
       showToast(editingEmpresa ? 'Empresa atualizada!' : 'Empresa registada!');
-      setFormEmpresa({ nome: '', email: '', senha: '' });
+      setFormEmpresa(emptyEmpresaForm);
       setEditingEmpresa(null);
     } catch (error) {
       showCrudError('salvar empresa', error);
@@ -156,8 +181,13 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
     e.preventDefault();
 
     try {
+      const alunoParaSalvar = {
+        ...formAluno,
+        turmaId: turmasVinculaveisIds.has(formAluno.turmaId) ? formAluno.turmaId : '',
+      };
+
       if (isSupabaseConfigured) {
-        const savedAluno = await saveAlunoRecord({ id: editingAluno, ...formAluno });
+        const savedAluno = await saveAlunoRecord({ id: editingAluno, ...alunoParaSalvar });
         setData(prev => ({
           ...prev,
           alunos: editingAluno
@@ -165,9 +195,9 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
             : [savedAluno, ...prev.alunos],
         }));
       } else if (editingAluno) {
-        setData(prev => ({ ...prev, alunos: prev.alunos.map(a => a.id === editingAluno ? { ...a, ...formAluno } : a) }));
+        setData(prev => ({ ...prev, alunos: prev.alunos.map(a => a.id === editingAluno ? { ...a, ...alunoParaSalvar } : a) }));
       } else {
-        setData(prev => ({ ...prev, alunos: [{ id: 'a' + Date.now(), ...formAluno, status: 'pendente' }, ...prev.alunos] }));
+        setData(prev => ({ ...prev, alunos: [{ id: 'a' + Date.now(), ...alunoParaSalvar, status: 'pendente' }, ...prev.alunos] }));
       }
 
       showToast(editingAluno ? 'Aluno atualizado!' : 'Aluno registado!');

@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Loader2, LogOut, Shield, User, Building, CheckCircle2, Menu } from 'lucide-react';
 import { DataContext } from './contexts/DataContext';
 import { AuthContext } from './contexts/AuthContext';
+import { getTodayAttendanceDate } from './services/supabaseDataService';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import ProfessorDashboard from './components/ProfessorDashboard';
@@ -21,6 +22,7 @@ export default function App() {
   } = useContext(DataContext);
   const { currentUser, setCurrentUser } = useContext(AuthContext);
   const [globalLoading, setGlobalLoading] = useState(true);
+  const [selectedAttendanceDate, setSelectedAttendanceDate] = useState(getTodayAttendanceDate());
   
 
 
@@ -212,6 +214,9 @@ export default function App() {
             dataFormatada={dataFormatada}
             saveAttendance={saveAttendance}
             isSupabaseConfigured={isSupabaseConfigured}
+            reloadData={reloadData}
+            selectedAttendanceDate={selectedAttendanceDate}
+            setSelectedAttendanceDate={setSelectedAttendanceDate}
           />
         )}
 
@@ -222,6 +227,10 @@ export default function App() {
             empresaTab={empresaTab}
             setEmpresaTab={setEmpresaTab}
             dataFormatada={dataFormatada}
+            isSupabaseConfigured={isSupabaseConfigured}
+            reloadData={reloadData}
+            selectedAttendanceDate={selectedAttendanceDate}
+            setSelectedAttendanceDate={setSelectedAttendanceDate}
           />
         )}
       </main>

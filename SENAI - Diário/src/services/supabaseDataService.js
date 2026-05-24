@@ -30,6 +30,11 @@ const emptyToNull = (value) => {
   return value;
 };
 
+const emptyToDefault = (value, fallback) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  return value;
+};
+
 const textValue = (value) => (value === undefined || value === null ? '' : String(value));
 
 const firstTextValue = (...values) => {
@@ -37,9 +42,35 @@ const firstTextValue = (...values) => {
   return textValue(value);
 };
 
-const normalizeStatus = (status) => (
-  VALID_ATTENDANCE_STATUSES.has(status) ? status : 'pendente'
-);
+const normalizeStatus = (status) => {
+  const normalized = textValue(status).trim().toLowerCase();
+  if (normalized === 'faltou') return 'falta';
+  return VALID_ATTENDANCE_STATUSES.has(normalized) ? normalized : 'pendente';
+};
+
+const statusToDbTitle = (status) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === 'presente') return 'Presente';
+  if (normalized === 'falta') return 'Faltou';
+  return 'Pendente';
+};
+
+const parseDateOnly = (value) => {
+  const [year, month, day] = textValue(value).split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
+const getTodayDateOnly = () => {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+};
+
+const resolveTurmaStatus = (status, dataFim) => {
+  const endDate = parseDateOnly(dataFim);
+  if (endDate && endDate < getTodayDateOnly()) return 'Concluido';
+  return textValue(status || 'Ativo');
+};
 
 export const getTodayAttendanceDate = () => {
   const today = new Date();
@@ -49,10 +80,18 @@ export const getTodayAttendanceDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-const mapTurmaFromDb = (turma) => ({
-  id: idToString(turma.id),
-  nome: textValue(turma.nome),
-});
+const mapTurmaFromDb = (turma) => {
+  const dataFim = textValue(turma.data_fim ?? turma.dataFim);
+
+  return {
+    id: idToString(turma.id),
+    nome: textValue(turma.nome),
+    dataInicio: textValue(turma.data_inicio ?? turma.dataInicio),
+    dataFim,
+    status: resolveTurmaStatus(turma.status, dataFim),
+    quantidadeAulas: turma.quantidade_aulas ?? turma.quantidadeAulas ?? null,
+  };
+};
 
 const mapEmpresaFromDb = (empresa) => ({
   id: idToString(empresa.id),
@@ -114,8 +153,18 @@ const professorPayloadFromForm = (professor) => ({
   senha_hash: textValue(professor.senha),
 });
 
+const turmaPayloadFromForm = (turma) => ({
+  nome: textValue(turma.nome).trim(),
+  data_inicio: emptyToNull(turma.dataInicio),
+  data_fim: emptyToNull(turma.dataFim),
+  status: emptyToNull(resolveTurmaStatus(turma.status, turma.dataFim)),
+  quantidade_aulas: turma.quantidadeAulas ? Number(turma.quantidadeAulas) : null,
+});
+
 const empresaPayloadFromForm = (empresa) => ({
   nome: textValue(empresa.nome).trim(),
+  cnpj: textValue(empresa.cnpj).trim(),
+  endereco: textValue(empresa.endereco).trim(),
   email: textValue(empresa.email).trim(),
   senha_hash: textValue(empresa.senha),
 });
@@ -221,7 +270,7 @@ export const subscribeToSupabaseData = (onChange, onError) => {
 export const saveTurmaRecord = async (turma) => {
   ensureSupabase();
 
-  const values = { nome: textValue(turma.nome).trim() };
+  const values = turmaPayloadFromForm(turma);
   const query = turma.id
     ? supabase.from(TABLES.turmas).update(values).eq('id', turma.id)
     : supabase.from(TABLES.turmas).insert(values);
@@ -385,22 +434,38 @@ export const saveAttendanceRecords = async ({
 }) => {
   ensureSupabase();
 
-  const rows = alunos
+  const buildRows = (formatStatus = normalizeStatus) => alunos
     .filter((aluno) => aluno?.id)
+    .filter((aluno) => normalizeStatus(aluno.status) !== 'pendente')
     .map((aluno) => ({
       aluno_id: aluno.id,
       professor_id: emptyToNull(professorId),
       turma_id: emptyToNull(turmaId || aluno.turmaId),
       data: date,
-      status: normalizeStatus(aluno.status),
+      status: formatStatus(aluno.status),
+      aluno: emptyToDefault(aluno.nome, 'Aluno sem nome'),
+      email: textValue(aluno.email),
+      turma: textValue(aluno.turmaNome),
+      empresa: textValue(aluno.empresaNome),
+      aula_numero: aluno.aulaNumero || 1,
+      total_aulas_dia: aluno.totalAulasDia || 1,
     }));
 
+  const rows = buildRows();
   if (rows.length === 0) return [];
 
-  const upsertResult = await supabase
-    .from(TABLES.presencas)
-    .upsert(rows, { onConflict: 'aluno_id,data' })
-    .select('*');
+  const upsertAttendance = async (values) => (
+    supabase
+      .from(TABLES.presencas)
+      .upsert(values, { onConflict: 'aluno_id,data' })
+      .select('*')
+  );
+
+  let upsertResult = await upsertAttendance(rows);
+
+  if (upsertResult.error && /status|check constraint/i.test(upsertResult.error.message || '')) {
+    upsertResult = await upsertAttendance(buildRows(statusToDbTitle));
+  }
 
   if (!upsertResult.error) {
     return (upsertResult.data || []).map(mapPresencaFromDb);
@@ -414,11 +479,36 @@ export const saveAttendanceRecords = async ({
     .in('aluno_id', alunoIds);
   throwIfError(deleteError);
 
-  const { data, error } = await supabase
+  let insertResult = await supabase
     .from(TABLES.presencas)
     .insert(rows)
     .select('*');
-  throwIfError(error);
 
+  if (insertResult.error && /status|check constraint/i.test(insertResult.error.message || '')) {
+    insertResult = await supabase
+      .from(TABLES.presencas)
+      .insert(buildRows(statusToDbTitle))
+      .select('*');
+  }
+
+  throwIfError(insertResult.error);
+
+  return (insertResult.data || []).map(mapPresencaFromDb);
+};
+
+export const loadAttendanceRange = async ({ startDate, endDate, alunoIds = [] }) => {
+  ensureSupabase();
+
+  if (!startDate || !endDate || alunoIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from(TABLES.presencas)
+    .select('*')
+    .gte('data', startDate)
+    .lte('data', endDate)
+    .in('aluno_id', alunoIds)
+    .order('data', { ascending: true });
+
+  throwIfError(error);
   return (data || []).map(mapPresencaFromDb);
 };
