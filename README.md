@@ -12,7 +12,7 @@ Sistema web para chamadas, presença, acompanhamento de aprendizes, calendário 
 
 Profissionalizar a gestão de frequência escolar com uma interface moderna, responsiva e preparada para uso por Coordenação, Secretaria, Professores, Empresas parceiras e TIC.
 
-O projeto está em [`SENAI - Diário`](./SENAI%20-%20Diário).
+O projeto está organizado na raiz deste repositório.
 
 ## Stack
 
@@ -87,7 +87,7 @@ flowchart TD
 ## Estrutura
 
 ```txt
-SENAI - Diário/
+Senai-diario/
   src/
     components/          # Dashboards, calendário, perfil, automações e UI
     contexts/            # Auth, dados e preferências de usuário
@@ -102,7 +102,7 @@ SENAI - Diário/
 ## Instalação
 
 ```bash
-cd "SENAI - Diário"
+cd Senai-diario
 npm install
 cp .env.example .env
 npm run dev
@@ -125,7 +125,7 @@ VITE_TIC_ACCESS_TOKEN=troque-este-token-em-producao
 ## Supabase
 
 1. Crie um projeto Supabase.
-2. Execute [`supabase/schema.sql`](./SENAI%20-%20Diário/supabase/schema.sql).
+2. Execute [`supabase/schema.sql`](./supabase/schema.sql).
 3. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
 4. Em produção, substitua políticas abertas por RLS com autenticação real por perfil.
 
@@ -180,7 +180,7 @@ npm run build
 Saída:
 
 ```txt
-SENAI - Diário/dist
+dist/
 ```
 
 Hospedagem recomendada: Vercel, Netlify, GitHub Pages com SPA fallback, ou servidor Nginx/Node.js.
