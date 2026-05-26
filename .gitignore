@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+.vscode/
+npm-debug.log
+yarn-error.log
+vite-dev*.log
+.idea/
+.vite/
