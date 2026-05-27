@@ -42,14 +42,14 @@ const statusLabel = (status) => {
 export const exportPDFReport = ({
   alunosParaExportar = [],
   data,
-  title = 'Relatorio de Assiduidade',
-  subtitle = 'SENAI Diario Digital',
+  title = 'Relatório de Assiduidade',
+  subtitle = 'SENAI Diário Digital',
   prefix = 'relatorio',
   context = '',
 }) => {
   const reportWindow = window.open('', '_blank');
   if (!reportWindow) {
-    alert('Permita pop-ups para gerar o relatorio em PDF.');
+    alert('Permita pop-ups para gerar o relatório em PDF.');
     return;
   }
 
@@ -173,8 +173,8 @@ export const exportPDFReport = ({
   </table>
 
   <div class="footer">
-    <span>SENAI Diario Digital</span>
-    <span>Relatorio gerado automaticamente</span>
+    <span>SENAI Diário Digital</span>
+    <span>Relatório gerado automaticamente</span>
   </div>
   <script>
     document.title = ${JSON.stringify(`${prefix}_somativa_${fileDate}`)};

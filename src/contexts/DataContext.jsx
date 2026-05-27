@@ -64,7 +64,7 @@ export function DataProvider({ children }) {
 
   const reloadData = useCallback(async ({ silent = false, attendanceDate } = {}) => {
     if (!isSupabaseConfigured) {
-      throw new Error('Supabase nao configurado.');
+      throw new Error('Supabase não configurado.');
     }
 
     try {
@@ -139,7 +139,7 @@ export function DataProvider({ children }) {
 
   const saveAttendance = useCallback(async ({ alunos, turmaId, professorId, date }) => {
     if (!isSupabaseConfigured) {
-      throw new Error('Supabase nao configurado.');
+      throw new Error('Supabase não configurado.');
     }
 
     setSyncStatus('saving');

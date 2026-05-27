@@ -19,6 +19,7 @@ import {
   buildWeeklyReportMetrics,
   createAutomationLog,
   DEFAULT_EMAIL_AUTOMATIONS,
+  loadAutomationState,
   PERIODICITY_OPTIONS,
   persistAutomationState,
   readAutomationState,
@@ -81,6 +82,23 @@ export default function AutomationCenter({ data, showToast }) {
   const failureCount = history.filter((item) => item.status === 'failed').length;
 
   useEffect(() => {
+    let isMounted = true;
+
+    const loadRemoteState = async () => {
+      const remoteState = await loadAutomationState();
+      if (!isMounted) return;
+      setAutomations(remoteState.automations);
+      setHistory(remoteState.history);
+    };
+
+    loadRemoteState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     persistAutomationState({ automations, history });
   }, [automations, history]);
 
@@ -102,7 +120,7 @@ export default function AutomationCenter({ data, showToast }) {
         ? prev.map((automation) => (automation.id === editingId ? payload : automation))
         : [payload, ...prev]
     ));
-    showToast?.(editingId ? 'Automação atualizada.' : 'Automação criada.');
+    showToast?.(editingId ? 'Comunicado atualizado.' : 'Comunicado criado.');
     resetForm();
   };
 
@@ -116,12 +134,12 @@ export default function AutomationCenter({ data, showToast }) {
     setAutomations((prev) => prev.map((item) => (
       item.id === automation.id ? { ...item, status: nextStatus } : item
     )));
-    showToast?.(nextStatus === 'active' ? 'Automação ativada.' : 'Automação pausada.');
+    showToast?.(nextStatus === 'active' ? 'Comunicado ativado.' : 'Comunicado pausado.');
   };
 
   const deleteAutomation = (automationId) => {
     setAutomations((prev) => prev.filter((automation) => automation.id !== automationId));
-    showToast?.('Automação removida.');
+    showToast?.('Comunicado removido.');
   };
 
   const enqueueAutomation = (automation, status = 'queued') => {
@@ -142,15 +160,15 @@ export default function AutomationCenter({ data, showToast }) {
   return (
     <div className="p-6">
       <SectionHeader
-        eyebrow="Automações"
-        title="E-mails automáticos"
-        description="Painel administrativo para relatórios semanais, templates, filas, logs, retry e histórico de envios."
+        eyebrow="Comunicados automáticos"
+        title="Relatórios e alertas por e-mail"
+        description="Painel para relatórios semanais, templates, filas, logs, reenvio e histórico de comunicação com empresas."
       />
 
       <div className="automation-metrics-grid">
         <div className="automation-kpi">
           <Mail className="h-5 w-5 text-red-600" />
-          <span>Automações ativas</span>
+          <span>Comunicados ativos</span>
           <strong>{activeAutomations}</strong>
         </div>
         <div className="automation-kpi">
@@ -174,8 +192,8 @@ export default function AutomationCenter({ data, showToast }) {
         <section className="automation-panel">
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-950">Mensagens automáticas</h3>
-              <p className="mt-1 text-sm text-slate-500">Relatório principal: toda segunda-feira às 05:00 AM.</p>
+              <h3 className="text-base font-semibold text-slate-950">Comunicados programados</h3>
+              <p className="mt-1 text-sm text-slate-500">Relatório principal: toda segunda-feira às 05:00.</p>
             </div>
             <StatusBadge tone="success" icon={ServerCog}>
               Fila preparada
@@ -183,7 +201,7 @@ export default function AutomationCenter({ data, showToast }) {
           </div>
 
           {automations.length === 0 ? (
-            <EmptyState icon={Mail} title="Nenhuma automação criada" description="Crie mensagens automáticas para empresas, coordenação ou secretaria." />
+            <EmptyState icon={Mail} title="Nenhum comunicado criado" description="Crie relatórios automáticos para empresas, coordenação ou secretaria." />
           ) : (
             <div className="space-y-3">
               {automations.map((automation) => (
@@ -226,7 +244,7 @@ export default function AutomationCenter({ data, showToast }) {
         <aside className="automation-panel">
           <div className="mb-5 flex items-center gap-2">
             <Plus className="h-5 w-5 text-red-600" />
-            <h3 className="text-base font-semibold text-slate-950">{editingId ? 'Editar automação' : 'Nova automação'}</h3>
+            <h3 className="text-base font-semibold text-slate-950">{editingId ? 'Editar comunicado' : 'Novo comunicado'}</h3>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -289,7 +307,7 @@ export default function AutomationCenter({ data, showToast }) {
           <table>
             <thead>
               <tr>
-                <th>Automação</th>
+                <th>Comunicado</th>
                 <th>Status</th>
                 <th>Destinatários</th>
                 <th>Início</th>

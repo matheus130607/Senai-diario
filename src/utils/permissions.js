@@ -1,27 +1,27 @@
 export const ADMIN_ROLES = ['admin', 'coordenacao', 'secretaria', 'tic'];
-export const FULL_ACCESS_ROLES = ['admin', 'coordenacao', 'tic'];
+export const FULL_ACCESS_ROLES = ['admin', 'coordenacao', 'secretaria', 'tic'];
 
 export const ROLE_DEFINITIONS = {
   coordenacao: {
     label: 'Coordenação',
-    scope: 'Visão ampla do sistema',
+    scope: 'Visão estratégica e indicadores institucionais',
     permissions: [
       'Dashboards avançados',
-      'Relatórios e métricas',
-      'Filtros acadêmicos avançados',
-      'Análises de frequência',
-      'Gestão completa de turmas',
+      'Indicadores de frequência',
+      'Alertas acadêmicos',
+      'Relatórios consolidados',
+      'Acompanhamento de comunicados automáticos',
     ],
   },
   secretaria: {
     label: 'Secretaria',
-    scope: 'Administração acadêmica parcial',
+    scope: 'Operação administrativa e cadastros acadêmicos',
     permissions: [
       'Cadastro de alunos',
       'Cadastro de professores',
-      'Gerenciamento de e-mails',
-      'Impressão de relatórios',
-      'Suporte administrativo',
+      'Cadastro de empresas',
+      'Gestão de turmas e vínculos',
+      'Relatórios operacionais',
     ],
   },
   professor: {
@@ -120,7 +120,7 @@ export const getVisibleStudents = (data, currentUser) => {
 
 export const canManageAutomation = (role) => ['secretaria', 'coordenacao', 'tic', 'admin'].includes(role);
 
-export const canManagePeople = (role) => ['secretaria', 'coordenacao', 'tic', 'admin'].includes(role);
+export const canManagePeople = (role) => ['secretaria', 'tic', 'admin'].includes(role);
 
 export const canUseTechnicalTools = (role) => role === 'tic';
 

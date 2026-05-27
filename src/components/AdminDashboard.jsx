@@ -19,6 +19,7 @@ export default function AdminDashboard({
   setData,
   currentUser,
   adminTab,
+  setAdminTab,
   showToast,
   requestConfirm,
   syncStatus = 'not_configured',
@@ -43,7 +44,7 @@ export default function AdminDashboard({
     saving: 'Salvando',
     synced: 'Sincronizado',
     error: 'Erro',
-    not_configured: 'Nao configurado',
+    not_configured: 'Não configurado',
   };
   const labelClass = 'ds-label';
   const inputClass = 'ds-input';
@@ -67,9 +68,27 @@ export default function AdminDashboard({
     .filter(Boolean);
   const isTurmaVinculavel = (turma) => ['Ativo', 'Pausado'].includes(turma.status);
   const turmasVinculaveis = data.turmas.filter(isTurmaVinculavel);
+  const canManageRecords = ['secretaria', 'tic', 'admin'].includes(currentUser?.role);
+  const isCoordination = currentUser?.role === 'coordenacao';
   const dashboardSubtitle = currentUser?.role === 'tic'
-    ? 'Faça a gestão de turmas, professores, empresas parceiras, alunos, calendário, automações e integrações.'
-    : 'Faça a gestão de turmas, professores, empresas parceiras, alunos, calendário e automações.';
+    ? 'Monitore integrações, logs, permissões e saúde operacional do sistema.'
+    : isCoordination
+      ? 'Acompanhe indicadores, alertas de frequência, relatórios e comunicados institucionais.'
+      : 'Gerencie cadastros, vínculos acadêmicos, relatórios operacionais e comunicados automáticos.';
+  const totalPresencas = data.presencas.filter((item) => item.status === 'presente').length;
+  const totalFaltas = data.presencas.filter((item) => item.status === 'falta').length;
+  const totalAtrasos = data.presencas.filter((item) => item.atraso).length;
+  const totalComputado = totalPresencas + totalFaltas + totalAtrasos;
+  const frequenciaGeral = totalComputado === 0 ? 0 : Math.round(((totalPresencas + totalAtrasos) / totalComputado) * 100);
+  const faltasPorAluno = data.alunos
+    .map((aluno) => ({
+      aluno,
+      faltas: data.presencas.filter((presenca) => presenca.alunoId === aluno.id && presenca.status === 'falta').length,
+    }))
+    .filter((item) => item.faltas > 0)
+    .sort((a, b) => b.faltas - a.faltas)
+    .slice(0, 8);
+  const alunosSemVinculo = data.alunos.filter((aluno) => !aluno.turmaId || !aluno.empresaId);
 
   const handleManualSync = async () => {
     try {
@@ -77,7 +96,7 @@ export default function AdminDashboard({
       showToast("Dados sincronizados com Supabase!");
     } catch (error) {
       console.error('Erro ao sincronizar manualmente:', error);
-      alert('Nao foi possivel sincronizar com o Supabase.');
+      alert('Não foi possível sincronizar com o Supabase.');
     }
   };
 
@@ -87,7 +106,7 @@ export default function AdminDashboard({
       showToast("Dados recarregados do Supabase!");
     } catch (error) {
       console.error('Erro ao recarregar dados:', error);
-      alert('Nao foi possivel recarregar os dados do Supabase.');
+      alert('Não foi possível recarregar os dados do Supabase.');
     }
   };
 
@@ -128,6 +147,140 @@ export default function AdminDashboard({
 
         {adminTab === 'dashboard' && <DashboardView disponiveisTurmas={data.turmas} data={data} titleContext="Turma" />}
 
+        {adminTab === 'indicadores' && (
+          <div className="p-6">
+            <SectionHeader
+              eyebrow="Coordenação"
+              title="Indicadores institucionais"
+              description="Visão consolidada para acompanhar frequência, volume de aprendizes, turmas e empresas parceiras."
+            />
+            <div className="dashboard-metrics-grid">
+              <div className="metric-card ds-surface p-5">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Frequência geral</span>
+                <div className="mt-3 text-3xl font-semibold text-slate-950">{frequenciaGeral}%</div>
+              </div>
+              <div className="metric-card ds-surface p-5">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Aprendizes</span>
+                <div className="mt-3 text-3xl font-semibold text-slate-950">{data.alunos.length}</div>
+              </div>
+              <div className="metric-card ds-surface p-5">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Turmas ativas</span>
+                <div className="mt-3 text-3xl font-semibold text-slate-950">{data.turmas.filter(turma => turma.status === 'Ativo').length}</div>
+              </div>
+              <div className="metric-card ds-surface p-5">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Empresas</span>
+                <div className="mt-3 text-3xl font-semibold text-slate-950">{data.empresas.length}</div>
+              </div>
+            </div>
+            <div className="mt-6">
+              <DashboardView disponiveisTurmas={data.turmas} data={data} titleContext="Turma" />
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'alertas' && (
+          <div className="p-6">
+            <SectionHeader
+              eyebrow="Acompanhamento"
+              title="Alertas de frequência"
+              description="Sinais para a coordenação agir antes que faltas e pendências se tornem risco pedagógico."
+            />
+            <div className="grid gap-4 xl:grid-cols-2">
+              <div className="ds-panel p-5">
+                <h3 className="mb-4 text-base font-semibold text-slate-950">Aprendizes com faltas registradas</h3>
+                <div className="space-y-3">
+                  {faltasPorAluno.length === 0 && <p className="text-sm text-slate-500">Nenhum alerta de falta no período carregado.</p>}
+                  {faltasPorAluno.map(({ aluno, faltas }) => (
+                    <div key={aluno.id} className="ds-muted-panel flex items-center justify-between p-3">
+                      <div>
+                        <strong className="block text-sm text-slate-900">{aluno.nome}</strong>
+                        <span className="text-xs text-slate-500">{data.turmas.find(turma => turma.id === aluno.turmaId)?.nome || 'Turma não informada'}</span>
+                      </div>
+                      <StatusBadge tone="danger">{faltas} falta(s)</StatusBadge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="ds-panel p-5">
+                <h3 className="mb-4 text-base font-semibold text-slate-950">Pendências de cadastro</h3>
+                <div className="space-y-3">
+                  {alunosSemVinculo.length === 0 && <p className="text-sm text-slate-500">Todos os aprendizes possuem turma e empresa vinculadas.</p>}
+                  {alunosSemVinculo.slice(0, 8).map((aluno) => (
+                    <div key={aluno.id} className="ds-muted-panel flex items-center justify-between p-3">
+                      <strong className="text-sm text-slate-900">{aluno.nome}</strong>
+                      <StatusBadge tone="warning">{!aluno.turmaId ? 'Sem turma' : 'Sem empresa'}</StatusBadge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'relatorios' && (
+          <div className="p-6">
+            <SectionHeader
+              eyebrow="Relatórios"
+              title={isCoordination ? 'Relatórios gerenciais' : 'Relatórios operacionais'}
+              description="Exporte dados consolidados para coordenação, secretaria e empresas parceiras."
+              actions={(
+                <>
+                  <Button type="button" variant="success" onClick={() => exportExcelCSV(data.alunos, data, 'relatorio_alunos')}>
+                    <FileSpreadsheet className="w-4 h-4" /> Alunos CSV
+                  </Button>
+                  <Button type="button" onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Geral de Frequência', subtitle: getRoleLabel(currentUser?.role), prefix: 'relatorio_geral' })}>
+                    <FileText className="w-4 h-4" /> PDF geral
+                  </Button>
+                  <Button type="button" onClick={() => exportJSON(data)}>
+                    <Download className="w-4 h-4" /> Backup JSON
+                  </Button>
+                </>
+              )}
+            />
+            <div className="dashboard-metrics-grid">
+              <div className="metric-card ds-surface p-5"><span className="ds-label">Presenças</span><strong className="text-3xl">{totalPresencas}</strong></div>
+              <div className="metric-card ds-surface p-5"><span className="ds-label">Faltas</span><strong className="text-3xl">{totalFaltas}</strong></div>
+              <div className="metric-card ds-surface p-5"><span className="ds-label">Atrasos</span><strong className="text-3xl">{totalAtrasos}</strong></div>
+              <div className="metric-card ds-surface p-5"><span className="ds-label">Registros</span><strong className="text-3xl">{data.presencas.length}</strong></div>
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'vinculos' && (
+          <div className="p-6">
+            <SectionHeader
+              eyebrow="Secretaria"
+              title="Vínculos acadêmicos"
+              description="Acompanhe professores por turma e aprendizes pendentes de vínculo."
+            />
+            <div className="grid gap-4 xl:grid-cols-2">
+              <div className="ds-panel p-5">
+                <h3 className="mb-4 text-base font-semibold text-slate-950">Professores e turmas</h3>
+                <div className="space-y-3">
+                  {data.professores.map((professor) => (
+                    <div key={professor.id} className="ds-muted-panel flex items-center justify-between p-3">
+                      <strong className="text-sm text-slate-900">{professor.nome}</strong>
+                      <StatusBadge>{professor.turmas.length} turma(s)</StatusBadge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="ds-panel p-5">
+                <h3 className="mb-4 text-base font-semibold text-slate-950">Aprendizes com pendência</h3>
+                <div className="space-y-3">
+                  {alunosSemVinculo.length === 0 && <p className="text-sm text-slate-500">Nenhuma pendência de vínculo encontrada.</p>}
+                  {alunosSemVinculo.map((aluno) => (
+                    <div key={aluno.id} className="ds-muted-panel flex items-center justify-between p-3">
+                      <strong className="text-sm text-slate-900">{aluno.nome}</strong>
+                      <Button type="button" onClick={() => setAdminTab?.('alunos')}>Ajustar</Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {adminTab === 'calendario' && (
           <AcademicCalendar data={data} currentUser={currentUser} />
         )}
@@ -148,7 +301,7 @@ export default function AdminDashboard({
           <TicAdminTools data={data} syncStatus={syncStatus} syncError={syncError} showToast={showToast} />
         )}
 
-        {adminTab === 'turmas' && (
+        {canManageRecords && adminTab === 'turmas' && (
           <div className="p-6">
             <SectionHeader
               eyebrow="Academico"
@@ -212,7 +365,7 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {adminTab === 'professores' && (
+        {canManageRecords && adminTab === 'professores' && (
           <div className="p-6">
             <SectionHeader
               eyebrow="Equipe docente"
@@ -244,7 +397,7 @@ export default function AdminDashboard({
                 </label>
                 <label>
                   <span className={labelClass}>Senha</span>
-                  <input type="text" placeholder="Senha de acesso" value={formProf.senha} onChange={e => setFormProf({...formProf, senha: e.target.value})} className={inputClass} required />
+                  <input type="password" placeholder="Senha de acesso" value={formProf.senha} onChange={e => setFormProf({...formProf, senha: e.target.value})} className={inputClass} required />
                 </label>
               </div>
               <div>
@@ -287,7 +440,7 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {adminTab === 'empresas' && (
+        {canManageRecords && adminTab === 'empresas' && (
           <div className="p-6">
             <SectionHeader
               eyebrow="Parcerias"
@@ -315,7 +468,7 @@ export default function AdminDashboard({
                 </label>
                 <label>
                   <span className={labelClass}>Senha</span>
-                  <input type="text" placeholder="Senha de acesso" value={formEmpresa.senha} onChange={e => setFormEmpresa({...formEmpresa, senha: e.target.value})} className={inputClass} required />
+                  <input type="password" placeholder="Senha de acesso" value={formEmpresa.senha} onChange={e => setFormEmpresa({...formEmpresa, senha: e.target.value})} className={inputClass} required />
                 </label>
               </div>
               <div className="flex gap-2 border-t border-slate-200 pt-4">
@@ -343,18 +496,18 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {adminTab === 'alunos' && (
+        {canManageRecords && adminTab === 'alunos' && (
           <div className="p-6">
             <SectionHeader
               eyebrow="Aprendizes"
-              title="Gestao de alunos"
+              title="Gestão de alunos"
               description="Cadastre alunos, vincule turmas e conecte aprendizes as empresas parceiras."
               actions={(
                 <>
                   <Button type="button" variant="success" onClick={() => exportExcelCSV(data.alunos, data, 'admin_alunos')}>
                     <FileSpreadsheet className="w-4 h-4" /> Excel
                   </Button>
-                  <Button type="button" onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatorio Geral de Alunos', subtitle: 'Administracao SENAI', prefix: 'admin_alunos' })}>
+                  <Button type="button" onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Geral de Alunos', subtitle: 'Administração SENAI', prefix: 'admin_alunos' })}>
                     <FileText className="w-4 h-4" /> PDF
                   </Button>
                 </>
@@ -419,6 +572,18 @@ export default function AdminDashboard({
           </div>
         )}
 
+        {!canManageRecords && ['turmas', 'professores', 'empresas', 'alunos', 'vinculos'].includes(adminTab) && (
+          <div className="p-6">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
+              <h3 className="text-base font-bold">Área operacional da Secretaria</h3>
+              <p className="mt-2 text-sm leading-6">
+                Este módulo altera cadastros e vínculos acadêmicos. A Coordenação acompanha estes dados por indicadores,
+                alertas e relatórios; a manutenção diária fica com a Secretaria.
+              </p>
+            </div>
+          </div>
+        )}
+
         {adminTab === 'config' && currentUser?.role === 'tic' && (
           <div className="max-w-4xl space-y-8 p-6">
             <SectionHeader
@@ -459,7 +624,7 @@ export default function AdminDashboard({
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => exportJSON(data)}><Download className="w-4 h-4" /> Backup (.json)</Button>
                 <Button onClick={() => exportExcelCSV(data.alunos, data, 'relatorio_completo')} variant="success"><FileSpreadsheet className="w-4 h-4" /> Excel (.csv)</Button>
-                <Button onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatorio Completo', subtitle: 'Backup visual dos dados principais', prefix: 'relatorio_completo' })}><FileText className="w-4 h-4" /> PDF</Button>
+                <Button onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Completo', subtitle: 'Backup visual dos dados principais', prefix: 'relatorio_completo' })}><FileText className="w-4 h-4" /> PDF</Button>
               </div>
             </div>
           </div>

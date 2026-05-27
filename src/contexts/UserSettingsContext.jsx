@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from './AuthContext';
+import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 
 const STORAGE_KEY = 'senai-diario:user-settings:v1';
 
@@ -53,8 +54,65 @@ const persistSettings = (settings) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 };
 
+const persistRemoteSettings = (userKey, userRole, settings) => {
+  if (!isSupabaseConfigured || !supabase || !userKey || userKey === 'anonymous') return;
+
+  supabase
+    .from('user_preferences')
+    .upsert({
+      user_id: userKey,
+      user_role: userRole || 'usuario',
+      profile: {
+        ...settings.profile,
+        security: settings.security,
+      },
+      accessibility: settings.accessibility,
+      notifications: settings.notifications,
+      access_logs: settings.accessLogs,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,user_role' })
+    .then(({ error }) => {
+      if (!error) return;
+      const message = String(error.message || '').toLowerCase();
+      const isMissingTable = message.includes('user_preferences')
+        || message.includes('schema cache')
+        || message.includes('does not exist')
+        || message.includes('could not find the table');
+      if (!isMissingTable) console.error('Erro ao salvar preferências no Supabase:', error);
+    });
+};
+
+const readRemoteSettings = async (userKey, userRole) => {
+  if (!isSupabaseConfigured || !supabase || !userKey || userKey === 'anonymous') return null;
+
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_id', userKey)
+    .eq('user_role', userRole || 'usuario')
+    .maybeSingle();
+
+  if (error) {
+    const message = String(error.message || '').toLowerCase();
+    if (message.includes('user_preferences') || message.includes('schema cache') || message.includes('does not exist')) {
+      return null;
+    }
+    throw error;
+  }
+
+  if (!data) return null;
+
+  return mergeSettings({
+    profile: data.profile || {},
+    accessibility: data.accessibility || {},
+    notifications: data.notifications || {},
+    accessLogs: data.access_logs || [],
+    security: data.profile?.security || {},
+  });
+};
+
 const getUserKey = (currentUser) => (
-  currentUser?.id || currentUser?.email || currentUser?.role || 'anonymous'
+  currentUser?.profileId || currentUser?.id || currentUser?.email || currentUser?.role || 'anonymous'
 );
 
 const mergeSettings = (settings) => ({
@@ -99,6 +157,39 @@ export function UserSettingsProvider({ children }) {
     };
   }, [allSettings, currentUser, userKey]);
 
+  useEffect(() => {
+    if (!currentUser || !isSupabaseConfigured) return undefined;
+
+    let isMounted = true;
+
+    const loadRemote = async () => {
+      try {
+        const remoteSettings = await readRemoteSettings(userKey, currentUser.role);
+        if (!isMounted || !remoteSettings) return;
+
+        setAllSettings((prev) => {
+          const next = {
+            ...prev,
+            [userKey]: mergeSettings({
+              ...prev[userKey],
+              ...remoteSettings,
+            }),
+          };
+          persistSettings(next);
+          return next;
+        });
+      } catch (error) {
+        console.error('Erro ao carregar preferências do Supabase:', error);
+      }
+    };
+
+    loadRemote();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser, userKey]);
+
   const updateCurrentSettings = useCallback((updater) => {
     setAllSettings((prev) => {
       const current = mergeSettings(prev[userKey]);
@@ -108,9 +199,10 @@ export function UserSettingsProvider({ children }) {
         [userKey]: mergeSettings(nextForUser),
       };
       persistSettings(next);
+      persistRemoteSettings(userKey, currentUser?.role, next[userKey]);
       return next;
     });
-  }, [userKey]);
+  }, [currentUser?.role, userKey]);
 
   const updateProfile = useCallback((profilePatch) => {
     updateCurrentSettings((current) => ({

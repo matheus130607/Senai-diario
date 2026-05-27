@@ -13,7 +13,6 @@
     "@supabase/supabase-js": "^2.106.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
-    "firebase": "^12.12.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "react": "^19.2.6",
@@ -24,12 +23,14 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.4.20",
     "eslint": "^10.2.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "postcss": "^8.4.32",
     "postcss-preset-env": "^8.0.1",
+    "tailwindcss": "^3.4.17",
     "vite": "^8.0.12"
   }
 }

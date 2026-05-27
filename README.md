@@ -1,108 +1,70 @@
 # SENAI Diário Digital
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES2024-F7DF1E?logo=javascript&logoColor=111827)
-![Supabase](https://img.shields.io/badge/Supabase-ready-3ECF8E?logo=supabase&logoColor=white)
-![License](https://img.shields.io/badge/license-Proprietary-red)
-
-Sistema web para chamadas, presença, acompanhamento de aprendizes, calendário acadêmico, acessibilidade, automações de e-mail e gestão administrativa para unidades SENAI.
+Sistema web para registro de presença, acompanhamento de aprendizes, integração escola-empresa, relatórios acadêmicos e comunicados automáticos para unidades SENAI.
 
 ## Objetivo
 
-Profissionalizar a gestão de frequência escolar com uma interface moderna, responsiva e preparada para uso por Coordenação, Secretaria, Professores, Empresas parceiras e TIC.
-
-O projeto está organizado na raiz deste repositório.
+Centralizar a rotina do diário de classe em uma plataforma institucional: professores registram presença, Secretaria mantém cadastros e vínculos, Coordenação acompanha indicadores e empresas parceiras recebem visibilidade sobre seus aprendizes.
 
 ## Stack
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | React.js, JavaScript, Vite |
-| UI | TailwindCSS via CDN, CSS modular do design system, Lucide React |
-| Estado | Context API, persistência local para perfil e acessibilidade |
-| Dados | Supabase opcional, fallback com dados iniciais |
-| Exportação | CSV/PDF no navegador |
-| Automação | Painel frontend e modelo preparado para fila/backend Node.js |
-
-## Funcionalidades
-
-- Dashboards por perfil com indicadores de presença, faltas e pendências.
-- Chamada por turma, data e professor.
-- Calendário acadêmico com visão anual, mensal, semanal e diária.
-- Histórico completo por aprendiz, com percentuais, filtros, observações, justificativas e evolução mensal.
-- Perfil do usuário com foto, preferências, senha, notificações, permissões e histórico de acesso.
-- Módulo de acessibilidade com tema claro/escuro, alto contraste, fonte, escala, espaçamento, foco visível e preparação para Libras.
-- Painel de automações de e-mail com templates, periodicidade, fila, histórico, retry e reenvio.
-- Hierarquia de usuários: Coordenação, Secretaria, Professor, Empresa e TIC.
-- Rota técnica oculta `/sesisenaisp72` para Login TIC protegido por token.
-
-## Prints
-
-![Login](./docs/screenshots/login.png)
-
-![Calendário acadêmico](./docs/screenshots/calendario.png)
+| Frontend | React, JavaScript, Vite |
+| UI | CSS do design system, Tailwind local, Lucide React, Framer Motion |
+| Estado | Context API sincronizada com Supabase |
+| Dados | Supabase com schema versionado, migrations e RLS por perfil |
+| Autenticação | Supabase Auth com compatibilidade para tabelas legadas do Supabase |
+| Relatórios | CSV/PDF no navegador |
+| Comunicados | Painel persistente com fila/logs e preparo para backend/Edge Function |
 
 ## Perfis
 
-| Perfil | Escopo | Principais permissões |
+| Perfil | Uso principal | Acessos |
 |---|---|---|
-| Coordenação | Visão ampla | Dashboards, relatórios, métricas, filtros, análises e gestão completa |
-| Secretaria | Administração parcial | Alunos, professores, e-mails, relatórios, planilhas e suporte acadêmico |
-| Professor | Turmas vinculadas | Chamada, frequência, observações, relatórios e calendário das turmas |
-| Empresa | Aprendizes vinculados | Acompanhamento, relatórios e histórico completo de presença |
-| TIC | Super admin | Manutenção, reset de senhas, monitoramento, debug, permissões e visão global |
+| Coordenação | Visão estratégica | Dashboards, indicadores, alertas de frequência, relatórios, calendário e acompanhamento de comunicados |
+| Secretaria | Operação administrativa | CRUD de alunos, professores, empresas e turmas, vínculos, relatórios e comunicados |
+| Professor | Rotina de sala | Registro de presença, minhas turmas, aprendizes, relatórios e calendário |
+| Empresa Parceira | Acompanhamento externo | Aprendizes vinculados, histórico, calendário e relatórios |
+| TIC | Administração técnica | Integrações, logs, auditoria, permissões, reset e saúde do sistema |
 
-## Arquitetura
+## Funcionalidades
 
-```mermaid
-flowchart LR
-  User[Usuário] --> Login[Login por perfil]
-  Login --> Auth[AuthContext]
-  Auth --> App[App Shell]
-  App --> Sidebar[Menu por permissões]
-  App --> Data[DataContext]
-  Data --> Local[initialData fallback]
-  Data --> Supabase[(Supabase opcional)]
-  App --> Modules[Módulos React]
-  Modules --> Calendar[Calendário]
-  Modules --> History[Histórico]
-  Modules --> Profile[Perfil]
-  Modules --> A11y[Acessibilidade]
-  Modules --> Email[Automações]
-```
+- Login por perfil com Coordenação e Secretaria separados.
+- Rota técnica `/sesisenaisp72` para acesso TIC, sem token padrão ou preenchimento automático.
+- Registro de presença por turma e data.
+- Histórico por aprendiz com presença, faltas, atrasos, observações e justificativas.
+- Dashboards por perfil e alertas para faltas/pedências.
+- CRUD administrativo focado na Secretaria.
+- Portal da Empresa Parceira com relatórios por período.
+- Comunicados automáticos para relatórios semanais a empresas.
+- Preferências de acessibilidade e perfil com persistência local e Supabase quando disponível.
+- Auditoria preparada para operações sensíveis.
 
-```mermaid
-flowchart TD
-  Teacher[Professor registra chamada] --> Attendance[Presenças]
-  Attendance --> Calendar[Agenda Acadêmica]
-  Attendance --> Company[Portal Empresa]
-  Attendance --> Weekly[Relatório semanal]
-  Weekly --> Queue[Fila de envio]
-  Queue --> Retry[Retry automático]
-  Retry --> Logs[Logs e histórico]
-  Logs --> Admin[Painel administrativo]
-```
+## Supabase
 
-## Estrutura
+Execute as migrations em ordem ou use `supabase/schema.sql` como snapshot completo.
 
-```txt
-Senai-diario/
-  src/
-    components/          # Dashboards, calendário, perfil, automações e UI
-    contexts/            # Auth, dados e preferências de usuário
-    data/                # Dados iniciais demonstrativos
-    services/            # Supabase e automações
-    styles/              # Design system e acessibilidade
-    utils/               # Permissões, analytics e exportações
-  supabase/schema.sql    # Schema relacional e tabelas futuras
-  public/robots.txt      # Bloqueio da rota técnica
-```
+Principais tabelas:
+
+- `user_profiles`: vínculo entre `auth.users` e o papel da aplicação.
+- `turmas`, `alunos`, `professores`, `empresas`, `professores_turmas`.
+- `presencas`: registros de chamada e histórico.
+- `user_preferences`: perfil, acessibilidade, notificações e logs de acesso.
+- `email_automations` e `email_automation_logs`: comunicados automáticos.
+- `tic_access_logs` e `audit_logs`: monitoramento e auditoria.
+
+As políticas RLS finais usam `authenticated` e liberam dados por escopo:
+
+- Coordenação lê dados consolidados.
+- Secretaria cria e altera cadastros acadêmicos.
+- Professor lê/escreve presença apenas das turmas vinculadas.
+- Empresa lê apenas aprendizes vinculados.
+- TIC administra integrações, logs e auditoria.
 
 ## Instalação
 
 ```bash
-cd Senai-diario
 npm install
 cp .env.example .env
 npm run dev
@@ -114,44 +76,37 @@ Aplicação local:
 http://127.0.0.1:5173
 ```
 
+Rota técnica:
+
+```txt
+http://127.0.0.1:5173/sesisenaisp72
+```
+
 ## Variáveis
 
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_TIC_ACCESS_TOKEN=troque-este-token-em-producao
+VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_TIC_ACCESS_TOKEN=
 ```
 
-## Supabase
+`VITE_TIC_ACCESS_TOKEN` não possui valor padrão seguro. Configure localmente para testar o acesso TIC.
 
-1. Crie um projeto Supabase.
-2. Execute [`supabase/schema.sql`](./supabase/schema.sql).
-3. Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
-4. Em produção, substitua políticas abertas por RLS com autenticação real por perfil.
+## Ambiente local
 
-## Segurança
+O aplicativo depende do Supabase configurado no `.env.local`. Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, o sistema não carrega usuários reais nem libera autenticação. O painel "Acessos do Supabase" na tela de login lista apenas usuários retornados pelo banco configurado.
 
-- A rota `/sesisenaisp72` é marcada como `noindex,nofollow,noarchive` e bloqueada no `robots.txt`.
-- O Login TIC exige token configurável por ambiente.
-- Logs de acesso TIC são registrados localmente e o schema já prevê tabela dedicada.
-- Senhas e token técnico devem ser validados no backend em produção.
-- `.env` e logs locais estão ignorados pelo Git.
+## Comunicados automáticos
 
-## Automação de e-mail
+O fluxo principal previsto é semanal:
 
-Regra principal preparada: toda segunda-feira às 05:00, enviar relatório semanal para empresas com gráficos, métricas, frequência, faltas, atrasos e comparativos.
+1. Toda segunda-feira às 05:00.
+2. O sistema consolida a semana anterior.
+3. Cada empresa recebe relatório com aprendizes vinculados, presenças, faltas, atrasos e justificativas.
+4. Secretaria/TIC acompanham fila, logs, falhas e reenvios.
 
-O painel administrativo já modela:
-
-- automações;
-- destinatários;
-- templates reutilizáveis;
-- filas;
-- logs;
-- retry automático;
-- histórico;
-- reenvio;
-- ativação/desativação.
+O frontend já modela painel, templates, logs, retry e persistência. A entrega real de e-mails deve ser feita por backend ou Supabase Edge Function.
 
 ## Qualidade
 
@@ -160,46 +115,25 @@ npm run lint
 npm run build
 ```
 
-Validações realizadas nesta versão:
+Itens prioritários antes de produção:
 
-- build de produção;
-- lint;
-- navegação principal;
-- permissões por perfil no menu;
-- persistência local de acessibilidade/perfil;
-- proteção visual e `robots.txt` da rota TIC.
-
-## Deploy
-
-Build:
-
-```bash
-npm run build
-```
-
-Saída:
-
-```txt
-dist/
-```
-
-Hospedagem recomendada: Vercel, Netlify, GitHub Pages com SPA fallback, ou servidor Nginx/Node.js.
+- Criar usuários em Supabase Auth.
+- Preencher `user_profiles`.
+- Aplicar migrations com políticas RLS.
+- Validar permissões por perfil.
+- Configurar provedor real de e-mail.
+- Adicionar testes E2E de login, chamada, relatórios e bloqueios por perfil.
 
 ## Roadmap
 
-- Code splitting para reduzir bundle inicial.
-- Backend Node.js para cron real, fila BullMQ/Redis e provedor SMTP.
-- Autenticação real com RBAC no backend.
-- RLS Supabase por perfil.
-- Importação/exportação avançada de planilhas.
+- Justificativa de faltas com validação da Secretaria.
+- Alertas automáticos para baixa frequência.
+- Painel analítico avançado para Coordenação.
+- Edge Function para comunicados semanais.
+- Auditoria visual para TIC.
 - Testes E2E com Playwright.
-- Integração real com API de Libras.
-- Notificações por e-mail, WhatsApp ou webhook institucional.
+- Deploy em Vercel/Netlify com SPA fallback.
 
 ## Licença
 
-Projeto proprietário. Consulte [`LICENSE`](./LICENSE).
-
-## Créditos
-
-Desenvolvido como solução demonstrável para gestão de presença escolar SENAI, com foco em escalabilidade, acessibilidade, UX moderna e futura comercialização.
+Projeto proprietário. Consulte `LICENSE`.

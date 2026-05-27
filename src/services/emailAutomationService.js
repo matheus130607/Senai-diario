@@ -1,3 +1,5 @@
+import { isSupabaseConfigured, supabase } from './supabaseClient';
+
 export const AUTOMATION_STORAGE_KEY = 'senai-diario:email-automations:v1';
 
 export const DEFAULT_EMAIL_AUTOMATIONS = [
@@ -60,8 +62,121 @@ export const readAutomationState = () => {
   }
 };
 
+const emptyRemoteAutomationState = {
+  automations: [],
+  history: [],
+};
+
+const isMissingAutomationTableError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes('email_automations')
+    || message.includes('email_automation_logs')
+    || message.includes('schema cache')
+    || message.includes('does not exist')
+    || message.includes('could not find the table');
+};
+
+const mapAutomationFromDb = (row) => ({
+  id: row.client_id || row.id,
+  name: row.name,
+  description: row.description || '',
+  status: row.status || 'active',
+  periodicity: row.periodicity,
+  recipients: row.recipients,
+  template: row.template,
+  subject: row.subject,
+  retryLimit: row.retry_limit || 3,
+  queue: row.queue || 'attendance-email-reports',
+  nextRunLabel: row.next_run_at ? new Date(row.next_run_at).toLocaleString('pt-BR') : 'Segunda-feira, 05:00',
+});
+
+const mapLogFromDb = (row) => ({
+  id: row.client_id || row.id,
+  automationId: row.automation_client_id || row.automation_id || '',
+  automationName: row.automation_name || 'Comunicado automático',
+  status: row.status,
+  recipients: row.recipients || 0,
+  startedAt: row.started_at,
+  finishedAt: row.finished_at || '',
+  attempts: row.attempts || 1,
+  message: row.message || '',
+});
+
+export const loadAutomationState = async () => {
+  if (!isSupabaseConfigured || !supabase) return readAutomationState();
+
+  const [automationsResult, logsResult] = await Promise.all([
+    supabase.from('email_automations').select('*').order('created_at', { ascending: false }),
+    supabase.from('email_automation_logs').select('*').order('started_at', { ascending: false }).limit(20),
+  ]);
+
+  if (automationsResult.error || logsResult.error) {
+    const error = automationsResult.error || logsResult.error;
+    if (!isMissingAutomationTableError(error)) {
+      console.error('Erro ao carregar automações do Supabase:', error);
+    }
+    return emptyRemoteAutomationState;
+  }
+
+  const automations = (automationsResult.data || []).map(mapAutomationFromDb);
+  const history = (logsResult.data || []).map(mapLogFromDb);
+
+  return {
+    automations,
+    history,
+  };
+};
+
 export const persistAutomationState = (state) => {
   localStorage.setItem(AUTOMATION_STORAGE_KEY, JSON.stringify(state));
+
+  if (!isSupabaseConfigured || !supabase) return;
+
+  const automationRows = (state.automations || []).map((automation) => ({
+    client_id: automation.id,
+    name: automation.name,
+    description: automation.description,
+    status: automation.status,
+    periodicity: automation.periodicity,
+    recipients: automation.recipients,
+    template: automation.template,
+    subject: automation.subject,
+    retry_limit: Number(automation.retryLimit) || 3,
+    queue: automation.queue || 'attendance-email-reports',
+    updated_at: new Date().toISOString(),
+  }));
+
+  const logRows = (state.history || []).map((log) => ({
+    client_id: log.id,
+    status: log.status,
+    recipients: Number(log.recipients) || 0,
+    attempts: Number(log.attempts) || 1,
+    message: `${log.automationName || 'Comunicado automático'}: ${log.message || ''}`.trim(),
+    started_at: log.startedAt || new Date().toISOString(),
+    finished_at: log.finishedAt || null,
+  }));
+
+  if (automationRows.length > 0) {
+    supabase
+      .from('email_automations')
+      .upsert(automationRows, { onConflict: 'client_id' })
+      .then(({ error }) => {
+        if (error && !isMissingAutomationTableError(error)) {
+          console.error('Erro ao salvar automações no Supabase:', error);
+        }
+      });
+  }
+
+  if (logRows.length > 0) {
+    supabase
+      .from('email_automation_logs')
+      .upsert(logRows, { onConflict: 'client_id' })
+      .then(({ error }) => {
+        if (error && !isMissingAutomationTableError(error)) {
+          console.error('Erro ao salvar logs de automação no Supabase:', error);
+        }
+      });
+  }
 };
 
 export const createAutomationLog = (automation, status = 'queued', message = '') => ({

@@ -158,6 +158,7 @@ export default function App() {
   // --- TELA DE LOGIN ---
   if (!currentUser) {
     return <Login
+      data={data}
       setCurrentUser={setCurrentUser} 
       setGlobalLoading={setGlobalLoading}
       loginStep={loginStep} 
@@ -209,7 +210,7 @@ export default function App() {
               <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI" className="h-7 object-contain" />
               <div className="hidden md:flex h-6 w-px bg-slate-200"></div>
               <div className="hidden md:block">
-                <div className="text-sm font-semibold text-slate-900">Diario Digital</div>
+                <div className="text-sm font-semibold text-slate-900">Diário Digital SENAI</div>
               </div>
             </div>
             <div className="flex items-center gap-4 pr-4 sm:pr-6 lg:pr-8">

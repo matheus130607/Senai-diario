@@ -217,7 +217,7 @@ export default function UserProfile({ currentUser, showToast }) {
               {[
                 ['weeklyReports', 'Relatórios semanais', Mail],
                 ['absenceAlerts', 'Alertas de faltas', CheckCircle2],
-                ['automationFailures', 'Falhas em automações', Smartphone],
+                ['automationFailures', 'Falhas em comunicados automáticos', Smartphone],
                 ['productUpdates', 'Atualizações do sistema', Bell],
               ].map(([key, label, Icon]) => (
                 <label key={key} className="notification-option">
