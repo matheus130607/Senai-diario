@@ -19,6 +19,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ProfessorDashboard from './components/ProfessorDashboard';
 import EmpresaDashboard from './components/EmpresaDashboard';
 import Sidebar from './components/Sidebar';
+import VLibrasWidget from './components/VLibrasWidget';
 import { getRoleLabel, isAdministrativeRole } from './utils/permissions';
 
 export default function App() {
@@ -141,55 +142,65 @@ export default function App() {
   // --- TELA DE CARREGAMENTO ---
   if (globalLoading || isDataLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex animate-pulse flex-col items-center">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI" className="h-16 mb-8 object-contain" />
-          <div className="flex items-center gap-3 text-sm font-bold uppercase text-red-600">
-            <Loader2 className="h-5 w-5 animate-spin" /> Carregando o sistema
-          </div>
-          <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full w-1/2 animate-[bounce_1.5s_infinite] bg-red-600"></div>
+      <>
+        <VLibrasWidget />
+        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+          <div className="flex animate-pulse flex-col items-center">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI" className="h-16 mb-8 object-contain" />
+            <div className="flex items-center gap-3 text-sm font-bold uppercase text-red-600">
+              <Loader2 className="h-5 w-5 animate-spin" /> Carregando o sistema
+            </div>
+            <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full w-1/2 animate-[bounce_1.5s_infinite] bg-red-600"></div>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // --- TELA DE LOGIN ---
   if (!currentUser) {
-    return <Login
-      data={data}
-      setCurrentUser={setCurrentUser} 
-      setGlobalLoading={setGlobalLoading}
-      loginStep={loginStep} 
-      setLoginStep={setLoginStep} 
-      adminPassword={adminPassword} 
-      setAdminPassword={setAdminPassword}
-      profEmail={profEmail} 
-      setProfEmail={setProfEmail} 
-      profSenha={profSenha} 
-      setProfSenha={setProfSenha} 
-      loginError={loginError} 
-      setLoginError={setLoginError}
-    />;
+    return (
+      <>
+        <VLibrasWidget />
+        <Login
+          data={data}
+          setCurrentUser={setCurrentUser}
+          setGlobalLoading={setGlobalLoading}
+          loginStep={loginStep}
+          setLoginStep={setLoginStep}
+          adminPassword={adminPassword}
+          setAdminPassword={setAdminPassword}
+          profEmail={profEmail}
+          setProfEmail={setProfEmail}
+          profSenha={profSenha}
+          setProfSenha={setProfSenha}
+          loginError={loginError}
+          setLoginError={setLoginError}
+        />
+      </>
+    );
   }
 
   // --- TELA PRINCIPAL (DASHBOARD) ---
   return (
-    <div className="app-shell min-h-screen font-sans text-slate-800">
-      {/* Modal Confirm */}
-      {confirmModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="ds-panel max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">{confirmModal.title}</h3>
-            <p className="text-sm text-slate-500 mb-6">{confirmModal.message}</p>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} className="ds-button ds-button-neutral">Cancelar</button>
-              <button onClick={() => { if(confirmModal.onConfirm) confirmModal.onConfirm(); setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null }); }} className="ds-button ds-button-primary">Confirmar</button>
+    <>
+      <VLibrasWidget />
+      <div className="app-shell min-h-screen font-sans text-slate-800">
+        {/* Modal Confirm */}
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="ds-panel max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+              <h3 className="text-lg font-bold text-slate-900 mb-2">{confirmModal.title}</h3>
+              <p className="text-sm text-slate-500 mb-6">{confirmModal.message}</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} className="ds-button ds-button-neutral">Cancelar</button>
+                <button onClick={() => { if(confirmModal.onConfirm) confirmModal.onConfirm(); setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null }); }} className="ds-button ds-button-primary">Confirmar</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Toast */}
       {toast && (
@@ -333,5 +344,6 @@ export default function App() {
         )}
       </main>
     </div>
+    </>
   );
 }
