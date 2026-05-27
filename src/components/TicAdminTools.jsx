@@ -142,7 +142,7 @@ export default function TicAdminTools({ data, syncStatus, syncError, showToast }
           <div className="space-y-3 text-sm text-slate-600">
             <div className="ds-muted-panel p-3">
               <strong className="block text-slate-900">Ambiente</strong>
-              <span>SPA Vite com Supabase opcional e fallback local.</span>
+              <span>SPA Vite integrado ao Supabase configurado no ambiente.</span>
             </div>
             <div className="ds-muted-panel p-3">
               <strong className="block text-slate-900">Segurança</strong>

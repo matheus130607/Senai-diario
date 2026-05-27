@@ -82,7 +82,7 @@ export default function EmpresaDashboard({
   const handleAttendanceDateChange = async (event) => {
     const nextDate = event.target.value;
     if (nextDate > today) {
-      setDateError('Nao e possivel visualizar uma data futura.');
+      setDateError('Não é possível visualizar uma data futura.');
       return;
     }
 
@@ -95,7 +95,7 @@ export default function EmpresaDashboard({
       await reloadData?.({ attendanceDate: nextDate });
     } catch (error) {
       console.error('Erro ao carregar presencas da empresa:', error);
-      setDateError('Nao foi possivel carregar esta data.');
+      setDateError('Não foi possível carregar esta data.');
     } finally {
       setIsChangingDate(false);
     }
@@ -152,7 +152,7 @@ export default function EmpresaDashboard({
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Relatorio de Assiduidade - ${escapeHtml(currentUser.nome)}</title>
+  <title>Relatório de Assiduidade - ${escapeHtml(currentUser.nome)}</title>
   <style>
     @page { size: A4; margin: 16mm; }
     * { box-sizing: border-box; }
@@ -182,7 +182,7 @@ export default function EmpresaDashboard({
     <div class="brand">
       <img src="${SENAI_LOGO_URL}" alt="SENAI" />
       <div class="title">
-        <h1>Relatorio de Assiduidade</h1>
+        <h1>Relatório de Assiduidade</h1>
         <p>Aprendizes vinculados a empresa parceira</p>
       </div>
     </div>
@@ -216,11 +216,11 @@ export default function EmpresaDashboard({
   </table>
 
   <div class="note">
-    Este relatorio consolida os registros de chamada enviados pelos professores no periodo selecionado.
-    Dias sem chamada registrada nao entram no calculo da taxa.
+    Este relatório consolida os registros de chamada enviados pelos professores no período selecionado.
+    Dias sem chamada registrada não entram no cálculo da taxa.
   </div>
   <div class="footer">
-    <span>SENAI - Portal de Gestao Escolar Somativa</span>
+    <span>SENAI - Diário Digital</span>
     <span>Documento gerado automaticamente</span>
   </div>
   <script>window.onload = () => window.print();</script>
@@ -230,21 +230,21 @@ export default function EmpresaDashboard({
 
   const generateReport = async () => {
     if (!isSupabaseConfigured) {
-      alert('Supabase nao configurado.');
+      alert('Supabase não configurado.');
       return;
     }
     if (alunosEmpresa.length === 0) {
-      alert('Nao ha aprendizes vinculados a esta empresa.');
+      alert('Não há aprendizes vinculados a esta empresa.');
       return;
     }
 
     const reportWindow = window.open('', '_blank');
     if (!reportWindow) {
-      alert('Permita pop-ups para gerar o relatorio em PDF.');
+      alert('Permita pop-ups para gerar o relatório em PDF.');
       return;
     }
     reportWindow.document.open();
-    reportWindow.document.write('<p style="font-family: Arial, sans-serif; padding: 24px;">Gerando relatorio...</p>');
+    reportWindow.document.write('<p style="font-family: Arial, sans-serif; padding: 24px;">Gerando relatório...</p>');
     reportWindow.document.close();
 
     setIsGeneratingReport(true);
@@ -261,14 +261,14 @@ export default function EmpresaDashboard({
       reportWindow.document.close();
     } catch (error) {
       console.error('Erro ao gerar relatorio da empresa:', error);
-      alert(`Nao foi possivel gerar o relatorio: ${error.message || 'verifique o console.'}`);
+      alert(`Não foi possível gerar o relatório: ${error.message || 'verifique o console.'}`);
     } finally {
       setIsGeneratingReport(false);
     }
   };
 
   return (
-    <DashboardShell title="Portal do Parceiro" subtitle={`Acompanhe a assiduidade dos seus aprendizes. ${dataFormatada ? dataFormatada : ''}`}>
+    <DashboardShell title="Portal da Empresa Parceira" subtitle={`Acompanhe a assiduidade dos seus aprendizes vinculados. ${dataFormatada ? dataFormatada : ''}`}>
       <div className="workspace-panel min-h-[600px]">
         <div className="border-b border-slate-200 bg-white p-6">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
@@ -285,7 +285,7 @@ export default function EmpresaDashboard({
                 />
               </label>
               <label>
-                <span className="ds-label">Periodo do relatorio</span>
+                <span className="ds-label">Período do relatório</span>
                 <select
                   value={reportPeriod}
                   onChange={(event) => setReportPeriod(Number(event.target.value))}
@@ -307,7 +307,7 @@ export default function EmpresaDashboard({
                 onClick={() => exportPDFReport({
                   alunosParaExportar: alunosEmpresa,
                   data,
-                  title: 'Relatorio de Aprendizes',
+                  title: 'Relatório de Aprendizes',
                   subtitle: currentUser.nome || 'Empresa parceira',
                   prefix: 'empresa_alunos',
                   context: `Status em ${formatDate(selectedAttendanceDate)}`,
@@ -357,7 +357,7 @@ export default function EmpresaDashboard({
               actions={isChangingDate && <span className="ds-badge"><Loader2 className="w-4 h-4 animate-spin" /> Carregando</span>}
             />
             {alunosEmpresa.length === 0 ? (
-              <EmptyState title="Nenhum aprendiz vinculado" description="Quando a administracao vincular alunos a esta empresa, eles aparecerao aqui." />
+              <EmptyState title="Nenhum aprendiz vinculado" description="Quando a Secretaria vincular alunos a esta empresa, eles aparecerão aqui." />
             ) : (
               <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                 {alunosEmpresa.map(aluno => (

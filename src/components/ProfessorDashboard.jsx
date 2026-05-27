@@ -160,7 +160,7 @@ export default function ProfessorDashboard({
     const nextDate = event.target.value;
 
     if (nextDate < semesterBounds.min || nextDate > semesterBounds.max) {
-      setDateError('Selecione uma data deste semestre que nao seja futura.');
+      setDateError('Selecione uma data deste semestre que não seja futura.');
       return;
     }
 
@@ -174,7 +174,7 @@ export default function ProfessorDashboard({
       await reloadData?.({ attendanceDate: nextDate });
     } catch (error) {
       console.error('Erro ao carregar chamada da data selecionada:', error);
-      setDateError('Nao foi possivel carregar a chamada desta data.');
+      setDateError('Não foi possível carregar a chamada desta data.');
     } finally {
       setIsChangingDate(false);
     }
@@ -191,7 +191,7 @@ export default function ProfessorDashboard({
     setIsSending(true);
     try {
       if (!isSupabaseConfigured) {
-        throw new Error('Supabase nao configurado.');
+        throw new Error('Supabase não configurado.');
       }
 
       const alunosComContexto = alunosParaEnviar.map(aluno => ({
@@ -220,12 +220,12 @@ export default function ProfessorDashboard({
 
   const submitChamada = () => {
     if (!isSupabaseConfigured) {
-      alert('Supabase nao configurado pelo Administrador.');
+      alert('Supabase não configurado pelo Administrador.');
       return;
     }
 
     if (alunosTurmaAtual.length === 0) {
-      alert('Nao ha alunos nesta turma.');
+      alert('Não há alunos nesta turma.');
       return;
     }
 
@@ -241,7 +241,7 @@ export default function ProfessorDashboard({
   };
 
   return (
-    <DashboardShell title="Portal do Professor" subtitle="Faca a gestao da assiduidade das suas turmas.">
+    <DashboardShell title="Portal do Professor" subtitle="Faça a gestão da assiduidade das suas turmas.">
       <div className="workspace-panel flex min-h-[600px] flex-col">
         {profTab === 'dashboard' && (
           <DashboardView disponiveisTurmas={turmasDoProfessor} data={data} titleContext="Turma" />
@@ -263,7 +263,7 @@ export default function ProfessorDashboard({
           <div className="flex h-full flex-1 flex-col bg-slate-50">
             {currentUserTurmas.length === 0 ? (
               <div className="p-8">
-                <EmptyState icon={BookOpen} title="Sem turmas vinculadas" description="Quando a coordenacao vincular uma turma ao professor, a chamada ficara disponivel aqui." />
+                <EmptyState icon={BookOpen} title="Sem turmas vinculadas" description="Quando a Secretaria vincular uma turma ao professor, a chamada ficará disponível aqui." />
               </div>
             ) : (
               <>
@@ -342,8 +342,8 @@ export default function ProfessorDashboard({
                         {chamadaConcluida
                           ? 'Chamada concluida para esta turma.'
                           : chamadaIniciada
-                            ? 'Chamada iniciada, ainda com pendencias.'
-                            : 'Chamada ainda nao concluida nesta data.'}
+                            ? 'Chamada iniciada, ainda com pendências.'
+                            : 'Chamada ainda não concluída nesta data.'}
                       </div>
                       {dateError && <div className="text-xs text-red-600 mt-1">{dateError}</div>}
                     </div>
@@ -393,7 +393,7 @@ export default function ProfessorDashboard({
 
                   {!isChangingDate && alunosTurmaAtual.length === 0 && (
                     <div className="p-8">
-                      <EmptyState title="Nenhum aluno registrado" description="Esta turma ainda nao possui alunos para chamada." />
+                      <EmptyState title="Nenhum aluno registrado" description="Esta turma ainda não possui alunos para chamada." />
                     </div>
                   )}
                 </div>
@@ -429,11 +429,11 @@ export default function ProfessorDashboard({
             <SectionHeader
               eyebrow="Planejamento"
               title="Minhas turmas"
-              description="Acompanhe rapidamente o tamanho da turma, andamento da chamada e pendencias antes de entrar em sala."
+              description="Acompanhe rapidamente o tamanho da turma, andamento da chamada e pendências antes de entrar em sala."
             />
 
             {turmasDoProfessor.length === 0 ? (
-              <EmptyState icon={BookOpen} title="Sem turmas vinculadas" description="As turmas atribuidas pela coordenacao vao aparecer neste painel." />
+              <EmptyState icon={BookOpen} title="Sem turmas vinculadas" description="As turmas atribuídas pela Secretaria vão aparecer neste painel." />
             ) : (
               <div className="entity-grid">
                 {turmasDoProfessor.map((turma) => {
@@ -535,11 +535,11 @@ export default function ProfessorDashboard({
                       <div className="grid min-w-0 gap-3 text-sm text-slate-600 sm:grid-cols-2 lg:w-[34rem]">
                         <div className="flex min-w-0 items-center gap-2">
                           <BookOpen className="h-4 w-4 shrink-0 text-slate-400" />
-                          <span className="truncate">{turma?.nome || 'Turma nao informada'}</span>
+                          <span className="truncate">{turma?.nome || 'Turma não informada'}</span>
                         </div>
                         <div className="flex min-w-0 items-center gap-2">
                           <BriefcaseBusiness className="h-4 w-4 shrink-0 text-slate-400" />
-                          <span className="truncate">{empresa?.nome || 'Empresa nao informada'}</span>
+                          <span className="truncate">{empresa?.nome || 'Empresa não informada'}</span>
                         </div>
                       </div>
 
@@ -557,7 +557,7 @@ export default function ProfessorDashboard({
         {profTab === 'relatorios' && (
           <div className="flex-1 bg-white p-6">
             <SectionHeader
-              eyebrow="Relatorios"
+              eyebrow="Relatórios"
               title="Exportacoes e resumos"
               description="Gere arquivos para acompanhamento pedagogico sem depender de configuracoes externas nesta etapa."
               actions={(
@@ -572,7 +572,7 @@ export default function ProfessorDashboard({
                     onClick={() => exportPDFReport({
                       alunosParaExportar: alunosProfessor,
                       data,
-                      title: 'Relatorio do Professor',
+                      title: 'Relatório do Professor',
                       subtitle: 'Resumo consolidado das turmas',
                       prefix: 'relatorio_professor',
                       context: currentUser?.nome || currentUser?.name || 'Professor',
@@ -636,7 +636,7 @@ export default function ProfessorDashboard({
               <div className="ds-surface p-5">
                 <div className="mb-4 flex items-center gap-2 text-base font-semibold text-slate-950">
                   <BarChart3 className="h-5 w-5 text-red-600" />
-                  Relatorios por turma
+                  Relatórios por turma
                 </div>
                 <div className="space-y-3">
                   {turmasDoProfessor.map((turma) => {
@@ -658,7 +658,7 @@ export default function ProfessorDashboard({
                             onClick={() => exportPDFReport({
                               alunosParaExportar: turmaAlunos,
                               data,
-                              title: 'Relatorio da Turma',
+                              title: 'Relatório da Turma',
                               subtitle: turma.nome,
                               prefix: `turma_${turma.id}`,
                               context: turma.nome,
@@ -690,7 +690,7 @@ export default function ProfessorDashboard({
                     <StatusBadge tone="warning">Pendentes: {pendentes}</StatusBadge>
                   </div>
                   <p className="leading-6">
-                    Use os relatorios por turma para compartilhar indicadores simples de assiduidade com coordenacao, empresas parceiras e administracao.
+                    Use os relatórios por turma para compartilhar indicadores simples de assiduidade com coordenação, empresas parceiras e administração.
                   </p>
                 </div>
               </aside>

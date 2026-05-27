@@ -30,7 +30,7 @@ export const emptyEmpresaForm = {
 export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
   const showCrudError = (action, error) => {
     console.error(`Erro ao ${action}:`, error);
-    alert(`Nao foi possivel salvar a operacao no Supabase: ${error.message || 'verifique o console para mais detalhes.'}`);
+    alert(`Não foi possível salvar a operação no Supabase: ${error.message || 'verifique o console para mais detalhes.'}`);
   };
   const isTurmaVinculavel = (turma) => ['Ativo', 'Pausado'].includes(turma?.status);
   const turmasVinculaveisIds = new Set(data.turmas.filter(isTurmaVinculavel).map((turma) => turma.id));

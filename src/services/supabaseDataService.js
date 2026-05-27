@@ -16,12 +16,38 @@ const OPTIONAL_ATTENDANCE_COLUMNS = ['atraso', 'observacao', 'justificativa', 't
 
 const ensureSupabase = () => {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase nao configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+    throw new Error('Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
   }
 };
 
 const throwIfError = (error) => {
   if (error) throw error;
+};
+
+const isMissingRelationError = (error, relation) => {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes(relation)
+    || message.includes('schema cache')
+    || message.includes('does not exist')
+    || message.includes('could not find the table');
+};
+
+const writeAuditLog = (action, entity, entityId, metadata = {}) => {
+  if (!isSupabaseConfigured || !supabase) return;
+
+  supabase
+    .from('audit_logs')
+    .insert({
+      action,
+      entity,
+      entity_id: idToString(entityId),
+      metadata,
+    })
+    .then(({ error }) => {
+      if (error && !isMissingRelationError(error, 'audit_logs')) {
+        console.error('Erro ao registrar auditoria:', error);
+      }
+    });
 };
 
 const isStatusConstraintError = (error) => /status|check constraint/i.test(error?.message || '');
@@ -118,6 +144,7 @@ const mapAdministradorFromDb = (admin) => ({
   nome: textValue(admin.nome || 'Administrador'),
   email: textValue(admin.email),
   senha: firstTextValue(admin.senha, admin.senha_hash),
+  perfil: textValue(admin.perfil || admin.role || 'coordenacao'),
 });
 
 const mapPresencaFromDb = (presenca) => ({
@@ -215,6 +242,87 @@ const alunoPayloadFromForm = (aluno) => ({
   empresa_id: emptyToNull(aluno.empresaId),
 });
 
+const loadUserProfile = async (authUserId, email) => {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .or(`auth_user_id.eq.${authUserId},email.eq.${email}`)
+    .maybeSingle();
+
+  if (error) {
+    const message = String(error.message || '').toLowerCase();
+    if (message.includes('user_profiles') || message.includes('schema cache') || message.includes('does not exist')) {
+      return null;
+    }
+    throw error;
+  }
+
+  return data;
+};
+
+const hydrateAuthenticatedUser = async (profile, fallbackEmail) => {
+  const role = textValue(profile?.role).trim().toLowerCase();
+  const email = firstTextValue(profile?.email, fallbackEmail).trim().toLowerCase();
+
+  if (role === 'professor') {
+    const { data: professor, error } = await supabase
+      .from(TABLES.professores)
+      .select('*')
+      .eq('email_institucional', email)
+      .maybeSingle();
+    throwIfError(error);
+
+    if (!professor) {
+      return {
+        role,
+        profileId: idToString(profile.id),
+        id: idToString(profile.id || profile.auth_user_id),
+        nome: textValue(profile.nome || 'Professor'),
+        email,
+        turmas: [],
+      };
+    }
+
+    const { data: relations, error: relationsError } = await supabase
+      .from(TABLES.professoresTurmas)
+      .select('turma_id')
+      .eq('professor_id', professor.id);
+    throwIfError(relationsError);
+
+    const turmas = (relations || []).map((relation) => idToString(relation.turma_id)).filter(Boolean);
+    return { role, profileId: idToString(profile.id), ...sanitizeProfessor(professor, turmas) };
+  }
+
+  if (role === 'empresa') {
+    const { data: empresa, error } = await supabase
+      .from(TABLES.empresas)
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+    throwIfError(error);
+
+    if (!empresa) {
+      return {
+        role,
+        profileId: idToString(profile.id),
+        id: idToString(profile.id || profile.auth_user_id),
+        nome: textValue(profile.nome || 'Empresa Parceira'),
+        email,
+      };
+    }
+
+    return { role, profileId: idToString(profile.id), ...sanitizeEmpresa(empresa) };
+  }
+
+  return {
+    role,
+    profileId: idToString(profile.id),
+    id: idToString(profile.id || profile.auth_user_id),
+    nome: textValue(profile.nome || (role === 'secretaria' ? 'Secretaria' : 'Coordenação')),
+    email,
+  };
+};
+
 const loadAllPresencas = async () => {
   const pageSize = 1000;
   const rows = [];
@@ -303,7 +411,9 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
 export const authenticateSupabaseUser = async ({ role, email, password }) => {
   ensureSupabase();
 
-  const normalizedRole = textValue(role).trim().toLowerCase();
+  const normalizedRole = textValue(role).trim().toLowerCase() === 'admin'
+    ? 'coordenacao'
+    : textValue(role).trim().toLowerCase();
   const normalizedEmail = textValue(email).trim().toLowerCase();
   const normalizedPassword = textValue(password).trim();
 
@@ -311,16 +421,39 @@ export const authenticateSupabaseUser = async ({ role, email, password }) => {
     throw new Error('Informe e-mail e senha.');
   }
 
+  const authResult = await supabase.auth?.signInWithPassword?.({
+    email: normalizedEmail,
+    password: normalizedPassword,
+  });
+
+  if (authResult && !authResult.error && authResult.data?.user) {
+    const profile = await loadUserProfile(authResult.data.user.id, normalizedEmail);
+    const profileRole = textValue(profile?.role).trim().toLowerCase();
+
+    if (profile && profile.status !== 'inactive' && profileRole === normalizedRole) {
+      return hydrateAuthenticatedUser(profile, normalizedEmail);
+    }
+
+    if (profile && profileRole !== normalizedRole) {
+      await supabase.auth.signOut?.();
+      throw new Error('Esta conta não possui permissão para o perfil selecionado.');
+    }
+
+    await supabase.auth.signOut?.();
+  }
+
   const tableByRole = {
     professor: TABLES.professores,
     empresa: TABLES.empresas,
-    admin: TABLES.administradores,
+    coordenacao: TABLES.administradores,
+    secretaria: TABLES.administradores,
   };
 
   const emailColumnByRole = {
     professor: 'email_institucional',
     empresa: 'email',
-    admin: 'email',
+    coordenacao: 'email',
+    secretaria: 'email',
   };
 
   const table = tableByRole[normalizedRole];
@@ -340,7 +473,7 @@ export const authenticateSupabaseUser = async ({ role, email, password }) => {
 
   const storedPassword = firstTextValue(user?.senha_hash, user?.senha);
   if (!user || storedPassword !== normalizedPassword) {
-    throw new Error('E-mail ou palavra-passe incorretos.');
+    throw new Error('E-mail ou senha incorretos.');
   }
 
   if (normalizedRole === 'professor') {
@@ -360,6 +493,10 @@ export const authenticateSupabaseUser = async ({ role, email, password }) => {
   }
 
   const admin = sanitizeAdministrador(user);
+  if (admin.role !== normalizedRole) {
+    throw new Error('Esta conta não possui permissão para o perfil selecionado.');
+  }
+
   return {
     role: admin.role,
     id: admin.id,
@@ -406,6 +543,7 @@ export const saveTurmaRecord = async (turma) => {
 
   const { data, error } = await query.select('*').single();
   throwIfError(error);
+  writeAuditLog(turma.id ? 'turma_update' : 'turma_create', TABLES.turmas, data.id, { nome: data.nome });
   return mapTurmaFromDb(data);
 };
 
@@ -435,6 +573,7 @@ export const deleteTurmaRecord = async (id) => {
     .delete()
     .eq('id', id);
   throwIfError(error);
+  writeAuditLog('turma_delete', TABLES.turmas, id);
 };
 
 const replaceProfessorTurmas = async (professorId, turmaIds = []) => {
@@ -472,6 +611,7 @@ export const saveProfessorRecord = async (professor) => {
   const turmas = Array.isArray(professor.turmas) ? professor.turmas : [];
   await replaceProfessorTurmas(data.id, turmas);
 
+  writeAuditLog(professor.id ? 'professor_update' : 'professor_create', TABLES.professores, data.id, { turmas });
   return mapProfessorFromDb(data, turmas);
 };
 
@@ -495,6 +635,7 @@ export const deleteProfessorRecord = async (id) => {
     .delete()
     .eq('id', id);
   throwIfError(error);
+  writeAuditLog('professor_delete', TABLES.professores, id);
 };
 
 export const saveEmpresaRecord = async (empresa) => {
@@ -507,6 +648,7 @@ export const saveEmpresaRecord = async (empresa) => {
 
   const { data, error } = await query.select('*').single();
   throwIfError(error);
+  writeAuditLog(empresa.id ? 'empresa_update' : 'empresa_create', TABLES.empresas, data.id, { nome: data.nome });
   return mapEmpresaFromDb(data);
 };
 
@@ -524,6 +666,7 @@ export const deleteEmpresaRecord = async (id) => {
     .delete()
     .eq('id', id);
   throwIfError(error);
+  writeAuditLog('empresa_delete', TABLES.empresas, id);
 };
 
 export const saveAlunoRecord = async (aluno) => {
@@ -536,6 +679,10 @@ export const saveAlunoRecord = async (aluno) => {
 
   const { data, error } = await query.select('*').single();
   throwIfError(error);
+  writeAuditLog(aluno.id ? 'aluno_update' : 'aluno_create', TABLES.alunos, data.id, {
+    turmaId: aluno.turmaId || '',
+    empresaId: aluno.empresaId || '',
+  });
   return mapAlunoFromDb(data, new Map([[idToString(data.id), aluno.status || 'pendente']]));
 };
 
@@ -553,6 +700,7 @@ export const deleteAlunoRecord = async (id) => {
     .delete()
     .eq('id', id);
   throwIfError(error);
+  writeAuditLog('aluno_delete', TABLES.alunos, id);
 };
 
 export const saveAttendanceRecords = async ({
@@ -622,6 +770,7 @@ export const saveAttendanceRecords = async ({
   const upsertResult = await persistWithFallback(upsertAttendance);
 
   if (!upsertResult.error) {
+    writeAuditLog('presencas_upsert', TABLES.presencas, turmaId || 'sem_turma', { date, total: rows.length });
     return (upsertResult.data || []).map(mapPresencaFromDb);
   }
 
@@ -642,6 +791,7 @@ export const saveAttendanceRecords = async ({
 
   throwIfError(insertResult.error);
 
+  writeAuditLog('presencas_insert', TABLES.presencas, turmaId || 'sem_turma', { date, total: rows.length });
   return (insertResult.data || []).map(mapPresencaFromDb);
 };
 

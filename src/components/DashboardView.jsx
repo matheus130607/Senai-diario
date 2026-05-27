@@ -98,7 +98,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
               <p className="section-kicker mb-3">Assiduidade</p>
               <h2 className="text-2xl font-medium tracking-[-0.02em] text-slate-950">Panorama operacional</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Visao consolidada de presencas, faltas e pendencias para apoiar acompanhamento pedagogico e decisao rapida.
+                Visão consolidada de presenças, faltas e pendências para apoiar acompanhamento pedagógico e decisão rápida.
               </p>
             </div>
             <div className="w-full justify-self-stretch md:justify-self-end">
@@ -129,7 +129,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
               <p className="mt-1 text-xs leading-5 text-slate-500">Meta SENAI: {META_SENAI}%</p>
             </div>
             <span className={`ds-badge ${isAbaixoMeta ? 'ds-badge-danger' : 'ds-badge-success'}`}>
-              {isAbaixoMeta ? 'Atencao' : 'Saudavel'}
+              {isAbaixoMeta ? 'Atenção' : 'Saudável'}
             </span>
           </div>
 
@@ -158,7 +158,7 @@ export default function DashboardView({ disponiveisTurmas, data, titleContext = 
           <div className="rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">
             {total > 0
               ? isAbaixoMeta
-                ? 'A turma esta abaixo da meta e merece acompanhamento.'
+                ? 'A turma está abaixo da meta e merece acompanhamento.'
                 : 'A turma esta dentro da meta esperada.'
               : 'Sem registros suficientes para analise.'}
           </div>

@@ -27,30 +27,42 @@ export default function Sidebar({
   const { currentUser } = useContext(AuthContext);
   const currentRole = currentUser?.role;
 
-  const adminTabs = [
+  const coordenacaoTabs = [
     { id: 'dashboard', label: 'Visão geral', icon: PieChart },
+    { id: 'indicadores', label: 'Indicadores', icon: BarChart3 },
+    { id: 'alertas', label: 'Alertas de frequência', icon: ShieldCheck },
+    { id: 'relatorios', label: 'Relatórios', icon: ListChecks },
     { id: 'calendario', label: 'Calendário', icon: CalendarDays },
-    { id: 'turmas', label: 'Turmas', icon: BookOpen },
-    { id: 'professores', label: 'Professores', icon: Users },
-    { id: 'empresas', label: 'Empresas', icon: Building },
-    { id: 'alunos', label: 'Alunos', icon: GraduationCap },
-    { id: 'automacoes', label: 'Automações', icon: Mail },
+    { id: 'automacoes', label: 'Comunicados automáticos', icon: Mail },
   ];
 
-  const secretariaTabs = adminTabs.filter((tab) => !['turmas', 'empresas', 'config'].includes(tab.id));
+  const secretariaTabs = [
+    { id: 'dashboard', label: 'Visão operacional', icon: PieChart },
+    { id: 'alunos', label: 'Alunos', icon: GraduationCap },
+    { id: 'professores', label: 'Professores', icon: Users },
+    { id: 'empresas', label: 'Empresas', icon: Building },
+    { id: 'turmas', label: 'Turmas', icon: BookOpen },
+    { id: 'vinculos', label: 'Vínculos', icon: ShieldCheck },
+    { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
+    { id: 'calendario', label: 'Calendário', icon: CalendarDays },
+    { id: 'automacoes', label: 'Comunicados automáticos', icon: Mail },
+  ];
+
+  const ticTabs = [
+    { id: 'dashboard', label: 'Saúde do sistema', icon: PieChart },
+    { id: 'config', label: 'Integrações', icon: Settings },
+    { id: 'tic', label: 'TIC e auditoria', icon: Wrench },
+    ...secretariaTabs.filter((tab) => tab.id !== 'dashboard'),
+  ];
 
   const currentRoleTabs = isAdministrativeRole(currentRole)
     ? [
-        ...(currentRole === 'secretaria' ? secretariaTabs : adminTabs),
-        ...(currentRole === 'tic' ? [
-          { id: 'config', label: 'Integrações', icon: Settings },
-          { id: 'tic', label: 'TIC', icon: Wrench },
-        ] : []),
+        ...(currentRole === 'secretaria' ? secretariaTabs : currentRole === 'tic' ? ticTabs : coordenacaoTabs),
       ]
     : currentRole === 'professor'
       ? [
           { id: 'dashboard', label: 'Visão geral', icon: PieChart },
-          { id: 'chamada', label: 'Lista de chamada', icon: ListChecks },
+          { id: 'chamada', label: 'Registro de presença', icon: ListChecks },
           { id: 'turmas', label: 'Minhas turmas', icon: BookOpen },
           { id: 'aprendizes', label: 'Aprendizes', icon: GraduationCap },
           { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
@@ -58,7 +70,7 @@ export default function Sidebar({
         ]
       : [
           { id: 'dashboard', label: 'Visão geral', icon: PieChart },
-          { id: 'alunos', label: 'Meus aprendizes', icon: Users },
+          { id: 'alunos', label: 'Aprendizes vinculados', icon: Users },
           { id: 'historico', label: 'Histórico', icon: ShieldCheck },
           { id: 'calendario', label: 'Calendário', icon: CalendarDays },
         ];
@@ -113,7 +125,7 @@ export default function Sidebar({
 
         <div className="mx-4 mb-5 border-t border-slate-200 pt-4">
           <blockquote className="text-sm font-medium leading-6 text-slate-900">
-            "Educacao profissional que transforma o futuro da industria."
+            "Educação profissional que transforma o futuro da indústria."
           </blockquote>
         </div>
       </div>
