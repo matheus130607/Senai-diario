@@ -5,19 +5,20 @@ import {
 } from 'lucide-react';
 import TechBackground from './TechBackground';
 import { getRoleLabel } from '../utils/permissions';
+import { isSupabaseConfigured } from '../services/supabaseClient';
+import { authenticateSupabaseUser } from '../services/supabaseDataService';
 
 export default function Login({
-  currentUser, setCurrentUser, setGlobalLoading, data,
+  currentUser, setCurrentUser, setGlobalLoading,
   loginStep, setLoginStep, adminPassword, setAdminPassword,
   profEmail, setProfEmail, profSenha, setProfSenha, loginError, setLoginError
 }) {
+  const ticAccessToken = import.meta.env.VITE_TIC_ACCESS_TOKEN || 'SENAI-TIC-72';
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [ticToken, setTicToken] = useState('');
+  const [ticToken, setTicToken] = useState(() => ticAccessToken);
   const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
   const normalizePassword = (value) => String(value || '').trim();
-  const firstCredential = (users = []) => users.find((user) => user?.email && user?.senha) || {};
   const isTicRoute = window.location.pathname.replace(/\/$/, '') === '/sesisenaisp72';
-  const ticAccessToken = import.meta.env.VITE_TIC_ACCESS_TOKEN || 'SENAI-TIC-72';
 
   const appendTicLog = (event, email) => {
     try {
@@ -37,59 +38,45 @@ export default function Login({
     }
   };
 
-  const fillTestCredentials = (role) => {
+  const prepareLoginStep = (step) => {
+    setLoginStep(step);
     setLoginError('');
-
-    if (role === 'professor') {
-      const professor = firstCredential(data.professores);
-      setProfEmail(professor.email || '');
-      setProfSenha(professor.senha || '');
-      setAdminPassword('');
-      return;
-    }
-
-    if (role === 'empresa') {
-      const empresa = firstCredential(data.empresas);
-      setProfEmail(empresa.email || '');
-      setProfSenha(empresa.senha || '');
-      setAdminPassword('');
-      return;
-    }
-
-    const admin = firstCredential(data.administradores);
-    setProfEmail(admin.email || '');
+    setProfEmail('');
     setProfSenha('');
-    setAdminPassword(admin.senha || '');
+    setAdminPassword('');
+  };
+
+  const handleDatabaseLogin = async ({ role, email, password }) => {
+    if (!isSupabaseConfigured) {
+      setLoginError('Supabase nao configurado. Preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setGlobalLoading(true);
+
+      const user = await authenticateSupabaseUser({ role, email, password });
+      setCurrentUser(user);
+      setLoginError('');
+      setProfEmail('');
+      setProfSenha('');
+      setAdminPassword('');
+    } catch (error) {
+      setLoginError(error.message || 'Nao foi possivel autenticar no Supabase.');
+    } finally {
+      setGlobalLoading(false);
+      setIsSubmitting(false);
+    }
   };
 
   const handleAdminLogin = async (e) => {
     e.preventDefault();
-    const email = normalizeEmail(profEmail);
-    const password = normalizePassword(adminPassword);
-    const admin = data.administradores?.find(admin => {
-      const adminEmail = normalizeEmail(admin.email);
-      return normalizePassword(admin.senha) === password && (!adminEmail || adminEmail === email);
+    await handleDatabaseLogin({
+      role: 'admin',
+      email: normalizeEmail(profEmail),
+      password: normalizePassword(adminPassword),
     });
-    if (admin) {
-      setIsSubmitting(true);
-      setGlobalLoading(true);
-      setTimeout(() => {
-        const role = admin.perfil || admin.role || 'coordenacao';
-        setCurrentUser({
-          role,
-          id: admin.id,
-          nome: admin.nome || 'Administrador',
-          email: admin.email,
-        });
-        setLoginError('');
-        setProfEmail('');
-        setAdminPassword('');
-        setGlobalLoading(false);
-        setIsSubmitting(false);
-      }, 800);
-    } else {
-      setLoginError('E-mail ou palavra-passe de administrador incorretos.');
-    }
   };
 
   const handleTicLogin = async (e) => {
@@ -129,48 +116,20 @@ export default function Login({
 
   const handleProfLogin = async (e) => {
     e.preventDefault();
-    const email = normalizeEmail(profEmail);
-    const password = normalizePassword(profSenha);
-    const prof = data.professores.find(p => normalizeEmail(p.email) === email && normalizePassword(p.senha) === password);
-    if (prof) {
-      setIsSubmitting(true);
-      setGlobalLoading(true);
-      setTimeout(() => {
-        const professorSemSenha = { ...prof };
-        delete professorSemSenha.senha;
-        setCurrentUser({ role: 'professor', ...professorSemSenha });
-        setLoginError('');
-        setProfEmail('');
-        setProfSenha('');
-        setGlobalLoading(false);
-        setIsSubmitting(false);
-      }, 800);
-    } else {
-      setLoginError('E-mail ou palavra-passe incorretos.');
-    }
+    await handleDatabaseLogin({
+      role: 'professor',
+      email: normalizeEmail(profEmail),
+      password: normalizePassword(profSenha),
+    });
   };
 
   const handleEmpresaLogin = async (e) => {
     e.preventDefault();
-    const email = normalizeEmail(profEmail);
-    const password = normalizePassword(profSenha);
-    const emp = data.empresas.find(emp => normalizeEmail(emp.email) === email && normalizePassword(emp.senha) === password);
-    if (emp) {
-      setIsSubmitting(true);
-      setGlobalLoading(true);
-      setTimeout(() => {
-        const empresaSemSenha = { ...emp };
-        delete empresaSemSenha.senha;
-        setCurrentUser({ role: 'empresa', ...empresaSemSenha });
-        setLoginError('');
-        setProfEmail('');
-        setProfSenha('');
-        setGlobalLoading(false);
-        setIsSubmitting(false);
-      }, 800);
-    } else {
-      setLoginError('E-mail ou palavra-passe incorretos.');
-    }
+    await handleDatabaseLogin({
+      role: 'empresa',
+      email: normalizeEmail(profEmail),
+      password: normalizePassword(profSenha),
+    });
   };
 
   if (currentUser) return null;
@@ -271,8 +230,7 @@ export default function Login({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      setLoginStep('prof_auth');
-                      fillTestCredentials('professor');
+                      prepareLoginStep('prof_auth');
                     }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
@@ -293,8 +251,7 @@ export default function Login({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      setLoginStep('empresa_auth');
-                      fillTestCredentials('empresa');
+                      prepareLoginStep('empresa_auth');
                     }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
@@ -315,8 +272,7 @@ export default function Login({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      setLoginStep('admin_auth');
-                      fillTestCredentials('admin');
+                      prepareLoginStep('admin_auth');
                     }}
                     className="w-full flex items-center justify-between bg-gray-50 border border-gray-200 rounded-2xl p-4 hover:bg-red-50 hover:border-red-200 transition-colors group"
                   >
@@ -341,6 +297,7 @@ export default function Login({
                         setLoginStep('tic_auth');
                         setLoginError('');
                         setProfEmail('tic@senaisp.edu.br');
+                        setTicToken(ticAccessToken);
                         setAdminPassword('');
                         setProfSenha('');
                       }}

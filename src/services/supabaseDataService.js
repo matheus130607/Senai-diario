@@ -12,6 +12,7 @@ export const TABLES = {
 
 const REALTIME_TABLES = Object.values(TABLES);
 const VALID_ATTENDANCE_STATUSES = new Set(['presente', 'falta', 'pendente']);
+const OPTIONAL_ATTENDANCE_COLUMNS = ['atraso', 'observacao', 'justificativa', 'termo', 'periodo'];
 
 const ensureSupabase = () => {
   if (!isSupabaseConfigured || !supabase) {
@@ -21,6 +22,16 @@ const ensureSupabase = () => {
 
 const throwIfError = (error) => {
   if (error) throw error;
+};
+
+const isStatusConstraintError = (error) => /status|check constraint/i.test(error?.message || '');
+
+const isMissingOptionalAttendanceColumnError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+  return OPTIONAL_ATTENDANCE_COLUMNS.some((column) => (
+    message.includes(column)
+    && (message.includes('column') || message.includes('schema cache') || message.includes('does not exist'))
+  ));
 };
 
 const idToString = (value) => (value === null || value === undefined ? '' : String(value));
@@ -134,6 +145,27 @@ const mapProfessorFromDb = (professor, turmas = []) => ({
   turmas,
 });
 
+const sanitizeProfessor = (professor, turmas = []) => {
+  const mapped = mapProfessorFromDb(professor, turmas);
+  delete mapped.senha;
+  return mapped;
+};
+
+const sanitizeEmpresa = (empresa) => {
+  const mapped = mapEmpresaFromDb(empresa);
+  delete mapped.senha;
+  return mapped;
+};
+
+const sanitizeAdministrador = (admin) => {
+  const mapped = mapAdministradorFromDb(admin);
+  delete mapped.senha;
+  return {
+    ...mapped,
+    role: admin.perfil || admin.role || 'coordenacao',
+  };
+};
+
 const mapAlunoFromDb = (aluno, statusByAlunoId) => {
   const alunoId = idToString(aluno.id);
 
@@ -183,6 +215,31 @@ const alunoPayloadFromForm = (aluno) => ({
   empresa_id: emptyToNull(aluno.empresaId),
 });
 
+const loadAllPresencas = async () => {
+  const pageSize = 1000;
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from(TABLES.presencas)
+      .select('*')
+      .order('data', { ascending: true })
+      .range(from, to);
+
+    throwIfError(error);
+
+    const page = data || [];
+    rows.push(...page);
+
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows.map(mapPresencaFromDb);
+};
+
 export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()) => {
   ensureSupabase();
 
@@ -193,7 +250,7 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     alunosResult,
     administradoresResult,
     professoresTurmasResult,
-    presencasResult,
+    presencas,
   ] = await Promise.all([
     supabase.from(TABLES.turmas).select('*').order('nome', { ascending: true }),
     supabase.from(TABLES.professores).select('*').order('nome', { ascending: true }),
@@ -201,7 +258,7 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     supabase.from(TABLES.alunos).select('*').order('nome', { ascending: true }),
     supabase.from(TABLES.administradores).select('*').order('nome', { ascending: true }),
     supabase.from(TABLES.professoresTurmas).select('*'),
-    supabase.from(TABLES.presencas).select('*').eq('data', attendanceDate),
+    loadAllPresencas(),
   ]);
 
   [
@@ -211,12 +268,11 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     alunosResult,
     administradoresResult,
     professoresTurmasResult,
-    presencasResult,
   ].forEach(({ error }) => throwIfError(error));
 
-  const presencas = (presencasResult.data || []).map(mapPresencaFromDb);
+  const selectedDatePresencas = presencas.filter((presenca) => presenca.data === attendanceDate);
   const statusByAlunoId = new Map(
-    presencas.map((presenca) => [presenca.alunoId, presenca.status]),
+    selectedDatePresencas.map((presenca) => [presenca.alunoId, presenca.status]),
   );
 
   const turmasByProfessorId = (professoresTurmasResult.data || []).reduce((acc, relation) => {
@@ -241,6 +297,74 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
       provider: 'supabase',
       attendanceDate,
     },
+  };
+};
+
+export const authenticateSupabaseUser = async ({ role, email, password }) => {
+  ensureSupabase();
+
+  const normalizedRole = textValue(role).trim().toLowerCase();
+  const normalizedEmail = textValue(email).trim().toLowerCase();
+  const normalizedPassword = textValue(password).trim();
+
+  if (!normalizedEmail || !normalizedPassword) {
+    throw new Error('Informe e-mail e senha.');
+  }
+
+  const tableByRole = {
+    professor: TABLES.professores,
+    empresa: TABLES.empresas,
+    admin: TABLES.administradores,
+  };
+
+  const emailColumnByRole = {
+    professor: 'email_institucional',
+    empresa: 'email',
+    admin: 'email',
+  };
+
+  const table = tableByRole[normalizedRole];
+  const emailColumn = emailColumnByRole[normalizedRole];
+
+  if (!table || !emailColumn) {
+    throw new Error('Perfil de login invalido.');
+  }
+
+  const { data: user, error } = await supabase
+    .from(table)
+    .select('*')
+    .eq(emailColumn, normalizedEmail)
+    .maybeSingle();
+
+  throwIfError(error);
+
+  const storedPassword = firstTextValue(user?.senha_hash, user?.senha);
+  if (!user || storedPassword !== normalizedPassword) {
+    throw new Error('E-mail ou palavra-passe incorretos.');
+  }
+
+  if (normalizedRole === 'professor') {
+    const { data: relations, error: relationsError } = await supabase
+      .from(TABLES.professoresTurmas)
+      .select('turma_id')
+      .eq('professor_id', user.id);
+
+    throwIfError(relationsError);
+
+    const turmas = (relations || []).map((relation) => idToString(relation.turma_id)).filter(Boolean);
+    return { role: 'professor', ...sanitizeProfessor(user, turmas) };
+  }
+
+  if (normalizedRole === 'empresa') {
+    return { role: 'empresa', ...sanitizeEmpresa(user) };
+  }
+
+  const admin = sanitizeAdministrador(user);
+  return {
+    role: admin.role,
+    id: admin.id,
+    nome: admin.nome || 'Administrador',
+    email: admin.email,
   };
 };
 
@@ -439,30 +563,54 @@ export const saveAttendanceRecords = async ({
 }) => {
   ensureSupabase();
 
-  const buildRows = (formatStatus = normalizeStatus) => alunos
+  const buildRows = (formatStatus = normalizeStatus, includeOptionalColumns = true) => alunos
     .filter((aluno) => aluno?.id)
     .filter((aluno) => normalizeStatus(aluno.status) !== 'pendente')
-    .map((aluno) => ({
-      aluno_id: aluno.id,
-      professor_id: emptyToNull(professorId),
-      turma_id: emptyToNull(turmaId || aluno.turmaId),
-      data: date,
-      status: formatStatus(aluno.status),
-      aluno: emptyToDefault(aluno.nome, 'Aluno sem nome'),
-      email: textValue(aluno.email),
-      turma: textValue(aluno.turmaNome),
-      empresa: textValue(aluno.empresaNome),
-      aula_numero: aluno.aulaNumero || 1,
-      total_aulas_dia: aluno.totalAulasDia || 1,
-      atraso: Boolean(aluno.atraso),
-      observacao: textValue(aluno.observacao),
-      justificativa: textValue(aluno.justificativa),
-      termo: textValue(aluno.termo),
-      periodo: textValue(aluno.periodo),
-    }));
+    .map((aluno) => {
+      const row = {
+        aluno_id: aluno.id,
+        professor_id: emptyToNull(professorId),
+        turma_id: emptyToNull(turmaId || aluno.turmaId),
+        data: date,
+        status: formatStatus(aluno.status),
+        aluno: emptyToDefault(aluno.nome, 'Aluno sem nome'),
+        email: textValue(aluno.email),
+        turma: textValue(aluno.turmaNome),
+        empresa: textValue(aluno.empresaNome),
+        aula_numero: aluno.aulaNumero || 1,
+        total_aulas_dia: aluno.totalAulasDia || 1,
+      };
+
+      if (includeOptionalColumns) {
+        row.atraso = Boolean(aluno.atraso);
+        row.observacao = textValue(aluno.observacao);
+        row.justificativa = textValue(aluno.justificativa);
+        row.termo = textValue(aluno.termo);
+        row.periodo = textValue(aluno.periodo);
+      }
+
+      return row;
+    });
 
   const rows = buildRows();
   if (rows.length === 0) return [];
+
+  const persistWithFallback = async (persistRows, includeOptionalColumns = true) => {
+    let result = await persistRows(buildRows(normalizeStatus, includeOptionalColumns));
+
+    if (!result.error) return result;
+
+    if (isStatusConstraintError(result.error)) {
+      result = await persistRows(buildRows(statusToDbTitle, includeOptionalColumns));
+      if (!result.error) return result;
+    }
+
+    if (includeOptionalColumns && isMissingOptionalAttendanceColumnError(result.error)) {
+      return persistWithFallback(persistRows, false);
+    }
+
+    return result;
+  };
 
   const upsertAttendance = async (values) => (
     supabase
@@ -471,11 +619,7 @@ export const saveAttendanceRecords = async ({
       .select('*')
   );
 
-  let upsertResult = await upsertAttendance(rows);
-
-  if (upsertResult.error && /status|check constraint/i.test(upsertResult.error.message || '')) {
-    upsertResult = await upsertAttendance(buildRows(statusToDbTitle));
-  }
+  const upsertResult = await persistWithFallback(upsertAttendance);
 
   if (!upsertResult.error) {
     return (upsertResult.data || []).map(mapPresencaFromDb);
@@ -489,17 +633,12 @@ export const saveAttendanceRecords = async ({
     .in('aluno_id', alunoIds);
   throwIfError(deleteError);
 
-  let insertResult = await supabase
-    .from(TABLES.presencas)
-    .insert(rows)
-    .select('*');
-
-  if (insertResult.error && /status|check constraint/i.test(insertResult.error.message || '')) {
-    insertResult = await supabase
+  const insertResult = await persistWithFallback((values) => (
+    supabase
       .from(TABLES.presencas)
-      .insert(buildRows(statusToDbTitle))
-      .select('*');
-  }
+      .insert(values)
+      .select('*')
+  ));
 
   throwIfError(insertResult.error);
 

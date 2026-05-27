@@ -1,5 +1,16 @@
-import { useState, useEffect, useContext } from 'react';
-import { Loader2, LogOut, Shield, User, Building, CheckCircle2, PanelLeft } from 'lucide-react';
+import { useState, useEffect, useContext, useRef } from 'react';
+import {
+  Accessibility,
+  Building,
+  CheckCircle2,
+  Loader2,
+  LogOut,
+  PanelLeft,
+  Settings,
+  Shield,
+  User,
+  UserRound,
+} from 'lucide-react';
 import { DataContext } from './contexts/DataContext';
 import { AuthContext } from './contexts/AuthContext';
 import { getTodayAttendanceDate } from './services/supabaseDataService';
@@ -42,6 +53,8 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(288);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
 
   // Utilitários
   const [toast, setToast] = useState('');
@@ -66,6 +79,19 @@ export default function App() {
     robotsMeta.setAttribute('content', isTicRoute ? 'noindex,nofollow,noarchive' : 'index,follow');
   }, []);
 
+  useEffect(() => {
+    if (!accountMenuOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!accountMenuRef.current?.contains(event.target)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown);
+    return () => window.removeEventListener('pointerdown', handlePointerDown);
+  }, [accountMenuOpen]);
+
   const requestConfirm = (title, message, onConfirm) => {
     setConfirmModal({ isOpen: true, title, message, onConfirm });
   };
@@ -83,13 +109,23 @@ export default function App() {
   };
 
   const currentRole = currentUser?.role;
+  const effectiveAdminTab = currentRole !== 'tic' && adminTab === 'config' ? 'dashboard' : adminTab;
 
-  const currentActiveTab = isAdministrativeRole(currentRole) ? adminTab : currentRole === 'professor' ? profTab : empresaTab;
+  const currentActiveTab = isAdministrativeRole(currentRole) ? effectiveAdminTab : currentRole === 'professor' ? profTab : empresaTab;
 
   const handleSidebarTabClick = (tabId) => {
     if (isAdministrativeRole(currentRole)) setAdminTab(tabId);
     if (currentRole === 'professor') setProfTab(tabId);
     if (currentRole === 'empresa') setEmpresaTab(tabId);
+    setAccountMenuOpen(false);
+    setSidebarOpen(false);
+  };
+
+  const handleAccountMenuTabClick = (tabId) => {
+    if (isAdministrativeRole(currentRole)) setAdminTab(tabId);
+    if (currentRole === 'professor') setProfTab(tabId);
+    if (currentRole === 'empresa') setEmpresaTab(tabId);
+    setAccountMenuOpen(false);
     setSidebarOpen(false);
   };
 
@@ -121,8 +157,7 @@ export default function App() {
 
   // --- TELA DE LOGIN ---
   if (!currentUser) {
-    return <Login 
-      data={data} 
+    return <Login
       setCurrentUser={setCurrentUser} 
       setGlobalLoading={setGlobalLoading}
       loginStep={loginStep} 
@@ -186,6 +221,38 @@ export default function App() {
                   {isAdministrativeRole(currentUser.role) ? getRoleLabel(currentUser.role) : currentUser.role === 'professor' ? `Prof. ${currentUser.nome.split(' ')[0]}` : `Parceiro: ${currentUser.nome}`}
                 </span>
               </div>
+              <div ref={accountMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setAccountMenuOpen(prev => !prev)}
+                  className="ds-button ds-button-neutral"
+                  aria-label="Abrir ajustes da conta"
+                  aria-expanded={accountMenuOpen}
+                  title="Ajustes"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+                {accountMenuOpen && (
+                  <div className="account-menu absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+                    <button
+                      type="button"
+                      onClick={() => handleAccountMenuTabClick('perfil')}
+                      className={`account-menu-item ${currentActiveTab === 'perfil' ? 'is-active' : ''}`}
+                    >
+                      <UserRound className="h-4 w-4" />
+                      Perfil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAccountMenuTabClick('acessibilidade')}
+                      className={`account-menu-item ${currentActiveTab === 'acessibilidade' ? 'is-active' : ''}`}
+                    >
+                      <Accessibility className="h-4 w-4" />
+                      Acessibilidade
+                    </button>
+                  </div>
+                )}
+              </div>
               <button onClick={logout} className="ds-button ds-button-neutral" title="Sair da Conta">
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Sair</span>
@@ -218,7 +285,7 @@ export default function App() {
             data={data} 
             setData={setData} 
             currentUser={currentUser}
-            adminTab={adminTab}
+            adminTab={effectiveAdminTab}
             setAdminTab={setAdminTab}
             showToast={showToast}
             requestConfirm={requestConfirm}

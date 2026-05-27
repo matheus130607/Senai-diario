@@ -91,6 +91,10 @@ alter table public.presencas add column if not exists justificativa text;
 alter table public.presencas add column if not exists termo text;
 alter table public.presencas add column if not exists periodo text;
 
+create index if not exists idx_presencas_data on public.presencas (data);
+create index if not exists idx_presencas_turma_data on public.presencas (turma_id, data);
+create index if not exists idx_presencas_professor_data on public.presencas (professor_id, data);
+
 create table if not exists public.user_preferences (
   id uuid primary key default gen_random_uuid(),
   user_id text not null,

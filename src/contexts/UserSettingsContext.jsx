@@ -179,12 +179,28 @@ export function UserSettingsProvider({ children }) {
   useEffect(() => {
     const accessibility = settings.accessibility;
     const root = document.documentElement;
-    root.dataset.theme = accessibility.theme;
     root.dataset.contrast = accessibility.highContrast ? 'high' : 'normal';
     root.dataset.colorScheme = accessibility.colorScheme;
     root.dataset.spacing = accessibility.spacing;
     root.style.setProperty('--user-font-scale', String(accessibility.fontScale));
     root.style.setProperty('--user-interface-scale', String(accessibility.interfaceScale));
+
+    const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const resolvedTheme = accessibility.theme === 'system'
+        ? mediaQuery?.matches ? 'dark' : 'light'
+        : accessibility.theme;
+
+      root.dataset.theme = resolvedTheme;
+      root.dataset.themePreference = accessibility.theme;
+    };
+
+    applyTheme();
+
+    if (accessibility.theme !== 'system' || !mediaQuery) return undefined;
+
+    mediaQuery.addEventListener?.('change', applyTheme);
+    return () => mediaQuery.removeEventListener?.('change', applyTheme);
   }, [settings.accessibility]);
 
   useEffect(() => {

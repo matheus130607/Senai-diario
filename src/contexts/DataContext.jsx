@@ -1,5 +1,4 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { initialData } from '../data/initialData';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
   getTodayAttendanceDate,
@@ -23,7 +22,7 @@ const emptyData = {
 };
 
 const normalizeData = (rawData) => {
-  const fallback = isSupabaseConfigured ? emptyData : initialData;
+  const fallback = emptyData;
   const source = rawData && typeof rawData === 'object' ? rawData : fallback;
   const alunos = Array.isArray(source.alunos) ? source.alunos : fallback.alunos;
   const professores = Array.isArray(source.professores) ? source.professores : fallback.professores;
@@ -56,7 +55,7 @@ const normalizeData = (rawData) => {
 };
 
 export function DataProvider({ children }) {
-  const [data, setData] = useState(() => normalizeData(isSupabaseConfigured ? emptyData : initialData));
+  const [data, setData] = useState(() => normalizeData(emptyData));
   const [isDataLoading, setIsDataLoading] = useState(isSupabaseConfigured);
   const [syncStatus, setSyncStatus] = useState(isSupabaseConfigured ? 'loading' : 'not_configured');
   const [syncError, setSyncError] = useState('');

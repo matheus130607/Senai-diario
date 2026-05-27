@@ -67,6 +67,9 @@ export default function AdminDashboard({
     .filter(Boolean);
   const isTurmaVinculavel = (turma) => ['Ativo', 'Pausado'].includes(turma.status);
   const turmasVinculaveis = data.turmas.filter(isTurmaVinculavel);
+  const dashboardSubtitle = currentUser?.role === 'tic'
+    ? 'Faça a gestão de turmas, professores, empresas parceiras, alunos, calendário, automações e integrações.'
+    : 'Faça a gestão de turmas, professores, empresas parceiras, alunos, calendário e automações.';
 
   const handleManualSync = async () => {
     try {
@@ -96,7 +99,7 @@ export default function AdminDashboard({
   };
 
   return (
-    <DashboardShell title={`Painel de ${getRoleLabel(currentUser?.role)}`} subtitle="Faça a gestão de turmas, professores, empresas parceiras, alunos, calendário, automações e integrações.">
+    <DashboardShell title={`Painel de ${getRoleLabel(currentUser?.role)}`} subtitle={dashboardSubtitle}>
       
 
       <div className="workspace-panel min-h-[600px]">
@@ -416,7 +419,7 @@ export default function AdminDashboard({
           </div>
         )}
 
-        {adminTab === 'config' && (
+        {adminTab === 'config' && currentUser?.role === 'tic' && (
           <div className="max-w-4xl space-y-8 p-6">
             <SectionHeader
               eyebrow="Sistema"

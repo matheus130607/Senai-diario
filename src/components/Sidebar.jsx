@@ -1,6 +1,5 @@
 import { useContext } from 'react';
 import {
-  Accessibility,
   BookOpen,
   BarChart3,
   Building,
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   Settings,
   Users,
-  UserRound,
   Wrench,
 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
@@ -37,9 +35,6 @@ export default function Sidebar({
     { id: 'empresas', label: 'Empresas', icon: Building },
     { id: 'alunos', label: 'Alunos', icon: GraduationCap },
     { id: 'automacoes', label: 'Automações', icon: Mail },
-    { id: 'acessibilidade', label: 'Acessibilidade', icon: Accessibility },
-    { id: 'perfil', label: 'Perfil', icon: UserRound },
-    { id: 'config', label: 'Integrações', icon: Settings },
   ];
 
   const secretariaTabs = adminTabs.filter((tab) => !['turmas', 'empresas', 'config'].includes(tab.id));
@@ -47,7 +42,10 @@ export default function Sidebar({
   const currentRoleTabs = isAdministrativeRole(currentRole)
     ? [
         ...(currentRole === 'secretaria' ? secretariaTabs : adminTabs),
-        ...(currentRole === 'tic' ? [{ id: 'tic', label: 'TIC', icon: Wrench }] : []),
+        ...(currentRole === 'tic' ? [
+          { id: 'config', label: 'Integrações', icon: Settings },
+          { id: 'tic', label: 'TIC', icon: Wrench },
+        ] : []),
       ]
     : currentRole === 'professor'
       ? [
@@ -57,16 +55,12 @@ export default function Sidebar({
           { id: 'aprendizes', label: 'Aprendizes', icon: GraduationCap },
           { id: 'relatorios', label: 'Relatórios', icon: BarChart3 },
           { id: 'calendario', label: 'Calendário', icon: CalendarDays },
-          { id: 'acessibilidade', label: 'Acessibilidade', icon: Accessibility },
-          { id: 'perfil', label: 'Perfil', icon: UserRound },
         ]
       : [
           { id: 'dashboard', label: 'Visão geral', icon: PieChart },
           { id: 'alunos', label: 'Meus aprendizes', icon: Users },
           { id: 'historico', label: 'Histórico', icon: ShieldCheck },
           { id: 'calendario', label: 'Calendário', icon: CalendarDays },
-          { id: 'acessibilidade', label: 'Acessibilidade', icon: Accessibility },
-          { id: 'perfil', label: 'Perfil', icon: UserRound },
         ];
 
   const startResize = (event) => {

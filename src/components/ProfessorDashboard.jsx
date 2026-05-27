@@ -136,8 +136,10 @@ export default function ProfessorDashboard({
 
   const presencasTurmaAtual = useMemo(() => {
     const alunoIds = new Set(alunosTurmaAtual.map(aluno => aluno.id));
-    return data.presencas.filter(presenca => alunoIds.has(presenca.alunoId));
-  }, [alunosTurmaAtual, data.presencas]);
+    return data.presencas.filter(presenca => (
+      alunoIds.has(presenca.alunoId) && presenca.data === selectedAttendanceDate
+    ));
+  }, [alunosTurmaAtual, data.presencas, selectedAttendanceDate]);
 
   const alunosFiltrados = useMemo(() => (
     alunosTurmaAtual.filter(aluno => aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()))
