@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { DataContext } from './contexts/DataContext';
 import { AuthContext } from './contexts/AuthContext';
+import { supabase } from './services/supabaseClient';
 import { getTodayAttendanceDate } from './services/supabaseDataService';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
@@ -98,7 +99,8 @@ export default function App() {
   };
 
   const logout = () => {
-    requestConfirm("Sair da Conta", "Deseja realmente sair da conta?", () => {
+    requestConfirm("Sair da Conta", "Deseja realmente sair da conta?", async () => {
+      await supabase?.auth?.signOut?.();
       setCurrentUser(null);
       setLoginStep('select');
     });

@@ -1,5 +1,6 @@
-import { createContext, useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { isSupabaseConfigured } from '../services/supabaseClient';
+import { AuthContext } from './AuthContext';
 import {
   getTodayAttendanceDate,
   loadSupabaseData,
@@ -54,10 +55,13 @@ const normalizeData = (rawData) => {
   };
 };
 
+const normalizedEmptyData = normalizeData(emptyData);
+
 export function DataProvider({ children }) {
-  const [data, setData] = useState(() => normalizeData(emptyData));
-  const [isDataLoading, setIsDataLoading] = useState(isSupabaseConfigured);
-  const [syncStatus, setSyncStatus] = useState(isSupabaseConfigured ? 'loading' : 'not_configured');
+  const { currentUser } = useContext(AuthContext);
+  const [data, setData] = useState(() => normalizedEmptyData);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(isSupabaseConfigured ? 'login_required' : 'not_configured');
   const [syncError, setSyncError] = useState('');
   const reloadTimeout = useRef(null);
   const attendanceDateRef = useRef(getTodayAttendanceDate());
@@ -68,7 +72,10 @@ export function DataProvider({ children }) {
     }
 
     try {
-      if (!silent) setSyncStatus('loading');
+      if (!silent) {
+        setSyncStatus('loading');
+        setIsDataLoading(true);
+      }
       setSyncError('');
 
       const dateToLoad = attendanceDate || attendanceDateRef.current || getTodayAttendanceDate();
@@ -91,6 +98,8 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return undefined;
 
+    if (!currentUser) return undefined;
+
     let isMounted = true;
 
     const loadInitialData = async () => {
@@ -111,10 +120,10 @@ export function DataProvider({ children }) {
       isMounted = false;
       if (reloadTimeout.current) clearTimeout(reloadTimeout.current);
     };
-  }, [reloadData]);
+  }, [currentUser, reloadData]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return undefined;
+    if (!isSupabaseConfigured || !currentUser) return undefined;
 
     return subscribeToSupabaseData(
       () => {
@@ -135,7 +144,7 @@ export function DataProvider({ children }) {
         setSyncStatus('error');
       },
     );
-  }, [reloadData]);
+  }, [currentUser, reloadData]);
 
   const saveAttendance = useCallback(async ({ alunos, turmaId, professorId, date }) => {
     if (!isSupabaseConfigured) {
@@ -155,14 +164,21 @@ export function DataProvider({ children }) {
     }
   }, [reloadData]);
 
+  const visibleData = currentUser ? data : normalizedEmptyData;
+  const visibleSyncStatus = currentUser
+    ? syncStatus
+    : isSupabaseConfigured ? 'login_required' : 'not_configured';
+  const visibleSyncError = currentUser ? syncError : '';
+  const visibleDataLoading = currentUser ? isDataLoading : false;
+
   return (
     <DataContext.Provider
       value={{
-        data,
+        data: visibleData,
         setData,
-        isDataLoading,
-        syncStatus,
-        syncError,
+        isDataLoading: visibleDataLoading,
+        syncStatus: visibleSyncStatus,
+        syncError: visibleSyncError,
         isSupabaseConfigured,
         reloadData,
         saveAttendance,
