@@ -44,6 +44,7 @@ export default function AdminDashboard({
     saving: 'Salvando',
     synced: 'Sincronizado',
     error: 'Erro',
+    login_required: 'Aguardando login',
     not_configured: 'Não configurado',
   };
   const labelClass = 'ds-label';

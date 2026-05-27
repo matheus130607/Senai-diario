@@ -8,6 +8,49 @@ import { getRoleLabel } from '../utils/permissions';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 import { authenticateSupabaseUser } from '../services/supabaseDataService';
 
+const FALLBACK_TEST_CREDENTIALS = [
+  {
+    id: 'fallback-coordenacao',
+    role: 'coordenacao',
+    step: 'admin_auth',
+    title: 'Administrador Geral',
+    subtitle: 'Coordenacao',
+    email: 'admin@senaisp.edu.br',
+    secret: 'senha_teste_123',
+    secretLabel: 'Senha',
+  },
+  {
+    id: 'fallback-secretaria',
+    role: 'secretaria',
+    step: 'secretaria_auth',
+    title: 'Secretaria Academica',
+    subtitle: 'Secretaria',
+    email: 'secretaria@senaisp.edu.br',
+    secret: 'senha_teste_123',
+    secretLabel: 'Senha',
+  },
+  {
+    id: 'fallback-professor',
+    role: 'professor',
+    step: 'prof_auth',
+    title: 'Carlos Eduardo Almeida',
+    subtitle: 'Professor',
+    email: 'carlos.almeida@senaisp.edu.br',
+    secret: 'senha_teste_123',
+    secretLabel: 'Senha',
+  },
+  {
+    id: 'fallback-empresa',
+    role: 'empresa',
+    step: 'empresa_auth',
+    title: 'Tech Solutions Brasil',
+    subtitle: 'Empresa',
+    email: 'contato@techsolutions.com.br',
+    secret: 'senha_teste_123',
+    secretLabel: 'Senha',
+  },
+];
+
 export default function Login({
   currentUser, setCurrentUser, setGlobalLoading, data,
   loginStep, setLoginStep, adminPassword, setAdminPassword,
@@ -22,14 +65,12 @@ export default function Login({
   const isTicRoute = window.location.pathname.replace(/\/$/, '') === '/sesisenaisp72';
 
   const supabaseCredentials = useMemo(() => {
-    if (!isSupabaseConfigured) return [];
-
     const source = data || {};
     const withPassword = (items, mapper) => (items || [])
       .map(mapper)
       .filter((item) => item.email && item.secret);
 
-    const credentials = [
+    const remoteCredentials = isSupabaseConfigured ? [
       ...withPassword(source.professores, (professor) => ({
         id: `professor-${professor.id || professor.email}`,
         role: 'professor',
@@ -64,10 +105,11 @@ export default function Login({
           secretLabel: 'Senha',
         };
       }),
-    ];
+    ] : [];
 
+    const fallbackCredentials = isSupabaseConfigured ? [...FALLBACK_TEST_CREDENTIALS] : [];
     if (isTicRoute && ticAccessToken) {
-      credentials.push({
+      fallbackCredentials.push({
         id: 'tic-token',
         role: 'tic',
         step: 'tic_auth',
@@ -79,7 +121,7 @@ export default function Login({
       });
     }
 
-    return credentials;
+    return remoteCredentials.length > 0 ? remoteCredentials : fallbackCredentials;
   }, [data, isTicRoute, ticAccessToken]);
 
   const appendTicLog = (event, email) => {
@@ -222,6 +264,16 @@ export default function Login({
     setIsSubmitting(true);
     setGlobalLoading(true);
     appendTicLog('tic_login_allowed', email);
+
+    if (isSupabaseConfigured) {
+      await handleDatabaseLogin({
+        role: 'tic',
+        email: email || 'tic@senaisp.edu.br',
+        password: token,
+      });
+      return;
+    }
+
     setTimeout(() => {
       setCurrentUser({
         role: 'tic',

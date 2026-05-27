@@ -9,12 +9,12 @@ import { UserSettingsProvider } from './contexts/UserSettingsContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <DataProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <DataProvider>
         <UserSettingsProvider>
           <App />
         </UserSettingsProvider>
-      </AuthProvider>
-    </DataProvider>
+      </DataProvider>
+    </AuthProvider>
   </StrictMode>,
 )
