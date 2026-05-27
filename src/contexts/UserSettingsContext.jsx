@@ -11,10 +11,56 @@ const defaultAccessibility = {
   fontScale: 1,
   spacing: 'comfortable',
   interfaceScale: 1,
+  focusMode: true,
   keyboardShortcuts: true,
   screenReaderHints: true,
-  focusMode: true,
-  librasProvider: 'ready',
+  librasEnabled: true,
+  librasProvider: 'vlibras',
+  librasPosition: 'right',
+  librasAvatar: 'icaro',
+};
+
+const ACCESSIBILITY_OPTIONS = {
+  theme: ['light', 'dark', 'system'],
+  colorScheme: ['senai', 'blue', 'green', 'mono'],
+  spacing: ['compact', 'comfortable', 'wide'],
+  librasProvider: ['vlibras', 'disabled'],
+  librasPosition: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  librasAvatar: ['icaro', 'hosana', 'guga', 'random'],
+};
+
+const clampNumber = (value, min, max, fallback) => {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.min(max, Math.max(min, numberValue));
+};
+
+const chooseOption = (value, options, fallback) => (
+  options.includes(value) ? value : fallback
+);
+
+const normalizeAccessibility = (accessibility = {}) => {
+  const legacyProvider = accessibility.librasProvider;
+  const provider = legacyProvider === 'disabled' ? 'disabled' : 'vlibras';
+  const hasEnabledSetting = typeof accessibility.librasEnabled === 'boolean';
+
+  return {
+    ...defaultAccessibility,
+    ...accessibility,
+    theme: chooseOption(accessibility.theme, ACCESSIBILITY_OPTIONS.theme, defaultAccessibility.theme),
+    highContrast: Boolean(accessibility.highContrast),
+    colorScheme: chooseOption(accessibility.colorScheme, ACCESSIBILITY_OPTIONS.colorScheme, defaultAccessibility.colorScheme),
+    fontScale: clampNumber(accessibility.fontScale, 0.9, 1.25, defaultAccessibility.fontScale),
+    spacing: chooseOption(accessibility.spacing, ACCESSIBILITY_OPTIONS.spacing, defaultAccessibility.spacing),
+    interfaceScale: clampNumber(accessibility.interfaceScale, 0.95, 1.15, defaultAccessibility.interfaceScale),
+    focusMode: accessibility.focusMode !== false,
+    keyboardShortcuts: true,
+    screenReaderHints: true,
+    librasProvider: chooseOption(provider, ACCESSIBILITY_OPTIONS.librasProvider, defaultAccessibility.librasProvider),
+    librasEnabled: hasEnabledSetting ? accessibility.librasEnabled : legacyProvider !== 'disabled',
+    librasPosition: chooseOption(accessibility.librasPosition, ACCESSIBILITY_OPTIONS.librasPosition, defaultAccessibility.librasPosition),
+    librasAvatar: chooseOption(accessibility.librasAvatar, ACCESSIBILITY_OPTIONS.librasAvatar, defaultAccessibility.librasAvatar),
+  };
 };
 
 const defaultNotifications = {
@@ -123,8 +169,7 @@ const mergeSettings = (settings) => ({
     ...(settings?.profile || {}),
   },
   accessibility: {
-    ...defaultAccessibility,
-    ...(settings?.accessibility || {}),
+    ...normalizeAccessibility(settings?.accessibility),
   },
   notifications: {
     ...defaultNotifications,
@@ -274,8 +319,11 @@ export function UserSettingsProvider({ children }) {
     root.dataset.contrast = accessibility.highContrast ? 'high' : 'normal';
     root.dataset.colorScheme = accessibility.colorScheme;
     root.dataset.spacing = accessibility.spacing;
+    root.dataset.focusMode = accessibility.focusMode ? 'enhanced' : 'standard';
+    root.dataset.libras = accessibility.librasEnabled && accessibility.librasProvider === 'vlibras' ? 'enabled' : 'disabled';
     root.style.setProperty('--user-font-scale', String(accessibility.fontScale));
     root.style.setProperty('--user-interface-scale', String(accessibility.interfaceScale));
+    root.style.setProperty('--user-font-size', `${(16 * accessibility.fontScale * accessibility.interfaceScale).toFixed(2)}px`);
 
     const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
     const applyTheme = () => {

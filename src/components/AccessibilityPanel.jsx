@@ -1,8 +1,8 @@
 import {
   Accessibility,
+  CheckCircle2,
   Contrast,
   Eye,
-  Keyboard,
   Languages,
   Moon,
   Palette,
@@ -29,17 +29,44 @@ function ToggleRow({ label, description, checked, onChange, icon: Icon }) {
   );
 }
 
+function RangeControl({ label, value, min, max, step, onChange, ariaLabel }) {
+  return (
+    <label className="accessibility-control">
+      <span className="ds-label">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-red-600"
+        aria-label={ariaLabel}
+      />
+      <span className="accessibility-value">{Math.round(value * 100)}%</span>
+    </label>
+  );
+}
+
 export default function AccessibilityPanel({ compact = false }) {
   const { settings, updateAccessibility, resetAccessibility } = useUserSettings();
   const accessibility = settings.accessibility;
+  const librasActive = accessibility.librasEnabled && accessibility.librasProvider === 'vlibras';
+
+  const handleLibrasToggle = (enabled) => {
+    updateAccessibility({
+      librasEnabled: enabled,
+      librasProvider: enabled ? 'vlibras' : 'disabled',
+    });
+  };
 
   return (
-    <div className={compact ? '' : 'p-6'}>
+    <div className={compact ? 'accessibility-panel-compact' : 'p-6'}>
       {!compact && (
         <SectionHeader
-          eyebrow="Acessibilidade e personalização"
+          eyebrow="Acessibilidade"
           title="Preferências de interface"
-          description="Configurações persistentes para tema, contraste, fonte, espaçamento, navegação e integrações assistivas."
+          description="Ajustes persistentes que alteram a experiência real do sistema em todas as telas."
           actions={(
             <Button onClick={resetAccessibility}>
               <RotateCcw className="h-4 w-4" />
@@ -51,12 +78,15 @@ export default function AccessibilityPanel({ compact = false }) {
 
       <div className="accessibility-layout">
         <section className="accessibility-card">
-          <div className="mb-5 flex items-center gap-2">
+          <div className="accessibility-card-header">
             <Palette className="h-5 w-5 text-red-600" />
-            <h3 className="text-base font-semibold text-slate-950">Aparência</h3>
+            <div>
+              <h3>Aparência</h3>
+              <p>Tema, cores, leitura e densidade visual.</p>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="accessibility-form-grid">
             <label>
               <span className="ds-label">Tema</span>
               <select
@@ -84,35 +114,25 @@ export default function AccessibilityPanel({ compact = false }) {
               </select>
             </label>
 
-            <label>
-              <span className="ds-label">Tamanho da fonte</span>
-              <input
-                type="range"
-                min="0.9"
-                max="1.25"
-                step="0.05"
-                value={accessibility.fontScale}
-                onChange={(event) => updateAccessibility({ fontScale: Number(event.target.value) })}
-                className="w-full accent-red-600"
-                aria-label="Ajustar tamanho da fonte"
-              />
-              <span className="text-xs text-slate-500">{Math.round(accessibility.fontScale * 100)}%</span>
-            </label>
+            <RangeControl
+              label="Tamanho da fonte"
+              min="0.9"
+              max="1.25"
+              step="0.05"
+              value={accessibility.fontScale}
+              onChange={(fontScale) => updateAccessibility({ fontScale })}
+              ariaLabel="Ajustar tamanho da fonte"
+            />
 
-            <label>
-              <span className="ds-label">Escala da interface</span>
-              <input
-                type="range"
-                min="0.95"
-                max="1.15"
-                step="0.05"
-                value={accessibility.interfaceScale}
-                onChange={(event) => updateAccessibility({ interfaceScale: Number(event.target.value) })}
-                className="w-full accent-red-600"
-                aria-label="Ajustar escala da interface"
-              />
-              <span className="text-xs text-slate-500">{Math.round(accessibility.interfaceScale * 100)}%</span>
-            </label>
+            <RangeControl
+              label="Escala da interface"
+              min="0.95"
+              max="1.15"
+              step="0.05"
+              value={accessibility.interfaceScale}
+              onChange={(interfaceScale) => updateAccessibility({ interfaceScale })}
+              ariaLabel="Ajustar escala da interface"
+            />
 
             <label>
               <span className="ds-label">Espaçamento</span>
@@ -128,18 +148,18 @@ export default function AccessibilityPanel({ compact = false }) {
             </label>
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="accessibility-toggle-list">
             <ToggleRow
               icon={Contrast}
               label="Alto contraste"
-              description="Aumenta contraste de textos, bordas e elementos interativos."
+              description="Reforça textos, bordas, superfícies e estados interativos."
               checked={accessibility.highContrast}
               onChange={(value) => updateAccessibility({ highContrast: value })}
             />
             <ToggleRow
               icon={Eye}
               label="Foco visível reforçado"
-              description="Destaca navegação por teclado em todos os controles."
+              description="Aumenta o destaque de navegação por teclado em botões, links e campos."
               checked={accessibility.focusMode}
               onChange={(value) => updateAccessibility({ focusMode: value })}
             />
@@ -147,63 +167,75 @@ export default function AccessibilityPanel({ compact = false }) {
         </section>
 
         <section className="accessibility-card">
-          <div className="mb-5 flex items-center gap-2">
-            <Accessibility className="h-5 w-5 text-red-600" />
-            <h3 className="text-base font-semibold text-slate-950">Recursos assistivos</h3>
+          <div className="accessibility-card-header">
+            <Languages className="h-5 w-5 text-red-600" />
+            <div>
+              <h3>Libras</h3>
+              <p>Integração oficial VLibras para tradução por avatar.</p>
+            </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="accessibility-toggle-list">
             <ToggleRow
-              icon={Keyboard}
-              label="Atalhos e navegação por teclado"
-              description="Mantém controles compatíveis com Tab, Enter e Escape."
-              checked={accessibility.keyboardShortcuts}
-              onChange={(value) => updateAccessibility({ keyboardShortcuts: value })}
-            />
-            <ToggleRow
-              icon={Type}
-              label="Dicas para leitores de tela"
-              description="Preserva labels, regiões nomeadas e mensagens descritivas."
-              checked={accessibility.screenReaderHints}
-              onChange={(value) => updateAccessibility({ screenReaderHints: value })}
+              icon={Accessibility}
+              label="VLibras ativo"
+              description="Exibe o botão oficial de tradução em Libras no sistema."
+              checked={librasActive}
+              onChange={handleLibrasToggle}
             />
           </div>
 
-          <div className="mt-5">
+          <div className="accessibility-form-grid mt-5">
             <label>
-              <span className="ds-label">Integração com Libras</span>
+              <span className="ds-label">Posição do botão</span>
               <select
-                value={accessibility.librasProvider}
-                onChange={(event) => updateAccessibility({ librasProvider: event.target.value })}
+                value={accessibility.librasPosition}
+                onChange={(event) => updateAccessibility({ librasPosition: event.target.value })}
                 className="ds-input"
+                disabled={!librasActive}
               >
-                <option value="ready">Preparado para API externa</option>
-                <option value="vlibras">VLibras ou equivalente</option>
-                <option value="custom">Endpoint personalizado</option>
-                <option value="disabled">Desativado</option>
+                <option value="right">Direita</option>
+                <option value="left">Esquerda</option>
+                <option value="top-right">Topo direito</option>
+                <option value="top-left">Topo esquerdo</option>
+                <option value="bottom-right">Base direita</option>
+                <option value="bottom-left">Base esquerda</option>
               </select>
             </label>
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              A camada está preparada para acoplar uma API externa de tradução em Libras sem alterar as telas principais.
-            </p>
+
+            <label>
+              <span className="ds-label">Avatar</span>
+              <select
+                value={accessibility.librasAvatar}
+                onChange={(event) => updateAccessibility({ librasAvatar: event.target.value })}
+                className="ds-input"
+                disabled={!librasActive}
+              >
+                <option value="icaro">Ícaro</option>
+                <option value="hosana">Hosana</option>
+                <option value="guga">Guga</option>
+                <option value="random">Aleatório</option>
+              </select>
+            </label>
           </div>
 
-          <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="accessibility-status-panel">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-slate-950">Prévia</span>
-              <StatusBadge tone={accessibility.highContrast ? 'warning' : 'success'}>
-                {accessibility.highContrast ? 'Alto contraste' : 'Padrão'}
+              <span className="text-sm font-semibold text-slate-950">Estado atual</span>
+              <StatusBadge tone={librasActive ? 'success' : 'warning'}>
+                {librasActive ? 'VLibras ativo' : 'VLibras desativado'}
               </StatusBadge>
             </div>
             <div className="accessibility-preview">
               <div>
-                <strong>Chamada acessível</strong>
-                <small>Labels, foco visível e estados legíveis.</small>
+                <strong>Preferências aplicadas</strong>
+                <small>Fonte, escala, espaçamento, contraste, foco e Libras são salvos por usuário.</small>
               </div>
               <div className="flex gap-2">
                 {accessibility.theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                <Type className="h-4 w-4" />
                 <Scaling className="h-4 w-4" />
-                <Languages className="h-4 w-4" />
+                {librasActive && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
               </div>
             </div>
           </div>
@@ -212,4 +244,3 @@ export default function AccessibilityPanel({ compact = false }) {
     </div>
   );
 }
-
