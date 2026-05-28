@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import TechBackground from './TechBackground';
 import { getRoleLabel } from '../utils/permissions';
+import { showTestCredentialPanel } from '../utils/runtimeFlags';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
 import { authenticateSupabaseUser } from '../services/supabaseDataService';
 
@@ -107,7 +108,7 @@ export default function Login({
       }),
     ] : [];
 
-    const fallbackCredentials = isSupabaseConfigured ? [...FALLBACK_TEST_CREDENTIALS] : [];
+    const fallbackCredentials = isSupabaseConfigured && showTestCredentialPanel ? [...FALLBACK_TEST_CREDENTIALS] : [];
     if (isTicRoute && ticAccessToken) {
       fallbackCredentials.push({
         id: 'tic-token',
@@ -121,8 +122,9 @@ export default function Login({
       });
     }
 
-    return remoteCredentials.length > 0 ? remoteCredentials : fallbackCredentials;
+    return showTestCredentialPanel && remoteCredentials.length > 0 ? remoteCredentials : fallbackCredentials;
   }, [data, isTicRoute, ticAccessToken]);
+  const shouldShowCredentialPanel = showTestCredentialPanel && supabaseCredentials.length > 0;
 
   const appendTicLog = (event, email) => {
     try {
@@ -627,6 +629,7 @@ export default function Login({
         </div>
       </div>
 
+      {shouldShowCredentialPanel && (
       <div className="fixed bottom-4 right-4 z-40 w-[calc(100vw-2rem)] max-w-sm">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -700,6 +703,7 @@ export default function Login({
           </AnimatePresence>
         </motion.div>
       </div>
+      )}
     </div>
   );
 }

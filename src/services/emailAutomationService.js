@@ -148,10 +148,12 @@ export const persistAutomationState = (state) => {
 
   const logRows = (state.history || []).map((log) => ({
     client_id: log.id,
+    automation_client_id: log.automationId || null,
+    automation_name: log.automationName || null,
     status: log.status,
     recipients: Number(log.recipients) || 0,
     attempts: Number(log.attempts) || 1,
-    message: `${log.automationName || 'Comunicado automático'}: ${log.message || ''}`.trim(),
+    message: log.message || '',
     started_at: log.startedAt || new Date().toISOString(),
     finished_at: log.finishedAt || null,
   }));

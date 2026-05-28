@@ -307,6 +307,8 @@ export default function App() {
             syncError={syncError}
             isSupabaseConfigured={isSupabaseConfigured}
             reloadData={reloadData}
+            selectedAttendanceDate={selectedAttendanceDate}
+            setSelectedAttendanceDate={setSelectedAttendanceDate}
           />
         )}
 

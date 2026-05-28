@@ -14,6 +14,7 @@ import {
 import { Button, SectionHeader, StatusBadge } from './ui/DesignSystem';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { getRoleLabel, getRolePermissions, getRoleScope } from '../utils/permissions';
+import { updateSupabasePassword } from '../services/supabaseDataService';
 import AccessibilityPanel from './AccessibilityPanel';
 
 const formatAccessDate = (value) => {
@@ -57,7 +58,7 @@ export default function UserProfile({ currentUser, showToast }) {
     reader.readAsDataURL(file);
   };
 
-  const handlePasswordSubmit = (event) => {
+  const handlePasswordSubmit = async (event) => {
     event.preventDefault();
     if (passwordForm.next.length < 6) {
       setPasswordError('A nova senha deve ter pelo menos 6 caracteres.');
@@ -68,10 +69,19 @@ export default function UserProfile({ currentUser, showToast }) {
       return;
     }
 
-    setPasswordError('');
-    setPasswordForm({ current: '', next: '', confirm: '' });
-    registerPasswordUpdate();
-    showToast?.('Senha registrada para atualização.');
+    try {
+      await updateSupabasePassword({
+        currentPassword: passwordForm.current,
+        nextPassword: passwordForm.next,
+        email: currentUser?.email || settings.profile.email,
+      });
+      setPasswordError('');
+      setPasswordForm({ current: '', next: '', confirm: '' });
+      registerPasswordUpdate();
+      showToast?.('Senha atualizada no Supabase Auth.');
+    } catch (error) {
+      setPasswordError(error.message || 'Não foi possível atualizar a senha.');
+    }
   };
 
   const permissions = getRolePermissions(currentUser?.role);

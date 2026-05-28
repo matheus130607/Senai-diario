@@ -12,12 +12,14 @@ const defaultAccessibility = {
   spacing: 'comfortable',
   interfaceScale: 1,
   focusMode: true,
+  reducedMotion: false,
   keyboardShortcuts: true,
   screenReaderHints: true,
   librasEnabled: true,
   librasProvider: 'vlibras',
   librasPosition: 'right',
   librasAvatar: 'icaro',
+  librasCustomPosition: null,
 };
 
 const ACCESSIBILITY_OPTIONS = {
@@ -25,7 +27,7 @@ const ACCESSIBILITY_OPTIONS = {
   colorScheme: ['senai', 'blue', 'green', 'mono'],
   spacing: ['compact', 'comfortable', 'wide'],
   librasProvider: ['vlibras', 'disabled'],
-  librasPosition: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  librasPosition: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'custom'],
   librasAvatar: ['icaro', 'hosana', 'guga', 'random'],
 };
 
@@ -38,6 +40,17 @@ const clampNumber = (value, min, max, fallback) => {
 const chooseOption = (value, options, fallback) => (
   options.includes(value) ? value : fallback
 );
+
+const normalizeLibrasCustomPosition = (position) => {
+  if (!position || typeof position !== 'object') return null;
+  const x = Number(position.x);
+  const y = Number(position.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return {
+    x: Math.max(8, Math.round(x)),
+    y: Math.max(8, Math.round(y)),
+  };
+};
 
 const normalizeAccessibility = (accessibility = {}) => {
   const legacyProvider = accessibility.librasProvider;
@@ -54,12 +67,14 @@ const normalizeAccessibility = (accessibility = {}) => {
     spacing: chooseOption(accessibility.spacing, ACCESSIBILITY_OPTIONS.spacing, defaultAccessibility.spacing),
     interfaceScale: clampNumber(accessibility.interfaceScale, 0.95, 1.15, defaultAccessibility.interfaceScale),
     focusMode: accessibility.focusMode !== false,
+    reducedMotion: Boolean(accessibility.reducedMotion),
     keyboardShortcuts: true,
     screenReaderHints: true,
     librasProvider: chooseOption(provider, ACCESSIBILITY_OPTIONS.librasProvider, defaultAccessibility.librasProvider),
     librasEnabled: hasEnabledSetting ? accessibility.librasEnabled : legacyProvider !== 'disabled',
     librasPosition: chooseOption(accessibility.librasPosition, ACCESSIBILITY_OPTIONS.librasPosition, defaultAccessibility.librasPosition),
     librasAvatar: chooseOption(accessibility.librasAvatar, ACCESSIBILITY_OPTIONS.librasAvatar, defaultAccessibility.librasAvatar),
+    librasCustomPosition: normalizeLibrasCustomPosition(accessibility.librasCustomPosition),
   };
 };
 
@@ -320,6 +335,7 @@ export function UserSettingsProvider({ children }) {
     root.dataset.colorScheme = accessibility.colorScheme;
     root.dataset.spacing = accessibility.spacing;
     root.dataset.focusMode = accessibility.focusMode ? 'enhanced' : 'standard';
+    root.dataset.reducedMotion = accessibility.reducedMotion ? 'true' : 'false';
     root.dataset.libras = accessibility.librasEnabled && accessibility.librasProvider === 'vlibras' ? 'enabled' : 'disabled';
     root.style.setProperty('--user-font-scale', String(accessibility.fontScale));
     root.style.setProperty('--user-interface-scale', String(accessibility.interfaceScale));

@@ -63,6 +63,15 @@ textarea:focus-visible {
   box-shadow: 0 0 0 6px var(--focus);
 }
 
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
 [data-theme="dark"] {
   color-scheme: dark;
   --ink-900: #f4f7fb;
@@ -1338,12 +1347,59 @@ textarea:focus-visible {
 }
 
 .senai-vlibras-widget {
+  position: fixed !important;
   z-index: 80;
+  touch-action: none;
+}
+
+.senai-vlibras-widget[data-custom-position="false"] {
+  top: 50% !important;
+  right: 0.75rem !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+}
+
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="left"] {
+  right: auto !important;
+  left: 0.75rem !important;
+}
+
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="top-right"],
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="top-left"] {
+  top: 0.75rem !important;
+  transform: none !important;
+}
+
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="bottom-right"],
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="bottom-left"] {
+  top: auto !important;
+  bottom: 0.75rem !important;
+  transform: none !important;
+}
+
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="top-left"],
+.senai-vlibras-widget[data-custom-position="false"][data-vlibras-position="bottom-left"] {
+  right: auto !important;
+  left: 0.75rem !important;
+}
+
+.senai-vlibras-widget[data-custom-position="true"] {
+  position: fixed !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  touch-action: none;
 }
 
 .senai-vlibras-widget [vw-access-button] {
   border-radius: var(--radius) !important;
+  cursor: grab !important;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
+}
+
+.senai-vlibras-widget[data-dragging="true"] [vw-access-button] {
+  cursor: grabbing !important;
 }
 
 .automation-card {
