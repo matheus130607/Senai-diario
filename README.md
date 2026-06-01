@@ -14,7 +14,7 @@ Centralizar a rotina do diário de classe em uma plataforma institucional: profe
 | UI | CSS do design system, Tailwind local, Lucide React, Framer Motion |
 | Estado | Context API sincronizada com Supabase |
 | Dados | Supabase com schema versionado, migrations e RLS por perfil |
-| Autenticação | Supabase Auth com compatibilidade para tabelas legadas do Supabase |
+| Autenticação | Supabase Auth com transição controlada para remover senhas legadas |
 | Relatórios | CSV/PDF no navegador |
 | Comunicados | Painel persistente com fila/logs e preparo para backend/Edge Function |
 
@@ -89,13 +89,24 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_TIC_ACCESS_TOKEN=
+VITE_ALLOW_LEGACY_PASSWORD_LOGIN=false
+VITE_SHOW_TEST_CREDENTIALS=false
 ```
 
 `VITE_TIC_ACCESS_TOKEN` não possui valor padrão seguro. Configure localmente para testar o acesso TIC.
 
 ## Ambiente local
 
-O aplicativo depende do Supabase configurado no `.env.local`. Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, o sistema não carrega usuários reais nem libera autenticação. O painel "Acessos do Supabase" na tela de login lista apenas usuários retornados pelo banco configurado.
+O aplicativo depende do Supabase configurado no `.env.local`. Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, o sistema não carrega usuários reais nem libera autenticação.
+
+Em produção, mantenha:
+
+```env
+VITE_ALLOW_LEGACY_PASSWORD_LOGIN=false
+VITE_SHOW_TEST_CREDENTIALS=false
+```
+
+Com isso o login fica baseado em Supabase Auth, e o painel "Acessos do Supabase" aparece apenas em desenvolvimento/teste.
 
 ## Comunicados automáticos
 
@@ -106,14 +117,23 @@ O fluxo principal previsto é semanal:
 3. Cada empresa recebe relatório com aprendizes vinculados, presenças, faltas, atrasos e justificativas.
 4. Secretaria/TIC acompanham fila, logs, falhas e reenvios.
 
-O frontend já modela painel, templates, logs, retry e persistência. A entrega real de e-mails deve ser feita por backend ou Supabase Edge Function.
+O frontend modela painel, templates, logs, retry e persistência. A entrega real fica em `supabase/functions/send-email-automations`, acionada por Supabase Cron e integrada a um provider real via `EMAIL_PROVIDER_WEBHOOK_URL`.
 
 ## Qualidade
 
 ```bash
 npm run lint
 npm run build
+npm run test:rls
 ```
+
+Seed oficial de Auth/perfis:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=... SEED_DEFAULT_PASSWORD=... SEED_TIC_PASSWORD=... npm run seed:supabase-users
+```
+
+Guia de produção: `docs/supabase-production.md`. A CLI pode ser usada via `npx supabase` se não estiver instalada globalmente.
 
 Itens prioritários antes de produção:
 

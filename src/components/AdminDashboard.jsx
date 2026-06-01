@@ -1,7 +1,7 @@
 // src/components/AdminDashboard.jsx
 import { useState } from 'react';
 import DashboardShell from './DashboardShell';
-import { AlertTriangle, BookOpen, Settings, Edit, Trash2, CheckSquare, Square, Download, FileSpreadsheet, FileText, Database, RefreshCw } from 'lucide-react';
+import { AlertTriangle, BookOpen, Edit, Trash2, CheckSquare, Square, FileSpreadsheet, FileText, Database, RefreshCw } from 'lucide-react';
 import DashboardView from './DashboardView';
 import SearchableSelect from './ui/SearchableSelect';
 import { AvatarInitial, Button, IconButton, SectionHeader, StatusBadge } from './ui/DesignSystem';
@@ -11,8 +11,9 @@ import AutomationCenter from './AutomationCenter';
 import TicAdminTools from './TicAdminTools';
 import UserProfile from './UserProfile';
 import { emptyEmpresaForm, emptyTurmaForm, useCrudOperations } from '../hooks/useCrudOperations';
-import { getRoleLabel } from '../utils/permissions';
-import { exportJSON, exportExcelCSV, exportPDFReport } from '../utils/utils';
+import { canManagePeople, getRoleLabel } from '../utils/permissions';
+import { allowLegacyPasswordLogin } from '../utils/runtimeFlags';
+import { exportExcelCSV, exportPDFReport } from '../utils/utils';
 
 export default function AdminDashboard({ 
   data,
@@ -26,6 +27,8 @@ export default function AdminDashboard({
   syncError = '',
   isSupabaseConfigured = false,
   reloadData,
+  selectedAttendanceDate,
+  setSelectedAttendanceDate,
 }) {
   const [editingTurma, setEditingTurma] = useState(null);
   const [editingProfessor, setEditingProfessor] = useState(null);
@@ -33,7 +36,7 @@ export default function AdminDashboard({
   const [editingAluno, setEditingAluno] = useState(null);
   
   const [formTurma, setFormTurma] = useState(emptyTurmaForm);
-  const [formProf, setFormProf] = useState({ nome: '', cpf: '', nif: '', telefone: '', email: '', senha: '', turmas: [] });
+  const [formProf, setFormProf] = useState({ nome: '', cpf: '', nif: '', telefone: '', email: '', turmas: [] });
   const [formEmpresa, setFormEmpresa] = useState(emptyEmpresaForm);
   const [formAluno, setFormAluno] = useState({ nome: '', cpf: '', telefone: '', email: '', turmaId: '', empresaId: '' });
 
@@ -58,6 +61,13 @@ export default function AdminDashboard({
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), today.getDate());
   })();
+  const toDateInputValue = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayInputValue = toDateInputValue(todayDateOnly);
   const turmasProximasDoFim = data.turmas
     .map((turma) => {
       const dataFim = parseDateOnly(turma.dataFim);
@@ -69,7 +79,10 @@ export default function AdminDashboard({
     .filter(Boolean);
   const isTurmaVinculavel = (turma) => ['Ativo', 'Pausado'].includes(turma.status);
   const turmasVinculaveis = data.turmas.filter(isTurmaVinculavel);
-  const canManageRecords = ['secretaria', 'tic', 'admin'].includes(currentUser?.role);
+  const [isChangingDate, setIsChangingDate] = useState(false);
+  const [dateError, setDateError] = useState('');
+  const canManageRecords = canManagePeople(currentUser?.role);
+  const showLegacyPasswordFields = allowLegacyPasswordLogin;
   const isCoordination = currentUser?.role === 'coordenacao';
   const dashboardSubtitle = currentUser?.role === 'tic'
     ? 'Monitore integrações, logs, permissões e saúde operacional do sistema.'
@@ -111,6 +124,29 @@ export default function AdminDashboard({
     }
   };
 
+  const handleAttendanceDateChange = async (event) => {
+    const nextDate = event.target.value;
+    if (!nextDate) return;
+    if (nextDate > todayInputValue) {
+      setDateError('Não é possível visualizar uma data futura.');
+      return;
+    }
+
+    setDateError('');
+    setSelectedAttendanceDate?.(nextDate);
+    if (!isSupabaseConfigured) return;
+
+    setIsChangingDate(true);
+    try {
+      await reloadData?.({ attendanceDate: nextDate });
+    } catch (error) {
+      console.error('Erro ao carregar dados da data selecionada:', error);
+      setDateError('Não foi possível carregar esta data.');
+    } finally {
+      setIsChangingDate(false);
+    }
+  };
+
   const toggleProfTurma = (turmaId) => {
     setFormProf(prev => {
       const turmas = prev.turmas.includes(turmaId) ? prev.turmas.filter(id => id !== turmaId) : [...prev.turmas, turmaId];
@@ -123,6 +159,30 @@ export default function AdminDashboard({
       
 
       <div className="workspace-panel min-h-[600px]">
+        <div className="border-b border-slate-200 bg-white p-6">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+            <div>
+              <span className="section-kicker">Recorte diário</span>
+              <h2 className="mt-2 text-xl font-semibold text-slate-950">Dados por dia específico</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Os indicadores e listas abaixo usam a data selecionada para status de presença.
+              </p>
+            </div>
+            <label className="min-w-[13rem]">
+              <span className="ds-label">Data de visualização</span>
+              <input
+                type="date"
+                value={selectedAttendanceDate || todayInputValue}
+                max={todayInputValue}
+                onChange={handleAttendanceDateChange}
+                disabled={isChangingDate}
+                className="date-input ds-input"
+              />
+            </label>
+          </div>
+          {dateError && <p className="mt-2 text-xs text-red-600">{dateError}</p>}
+        </div>
+
         {turmasProximasDoFim.length > 0 && (
           <div className="m-6 mb-0 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -231,9 +291,6 @@ export default function AdminDashboard({
                   </Button>
                   <Button type="button" onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Geral de Frequência', subtitle: getRoleLabel(currentUser?.role), prefix: 'relatorio_geral' })}>
                     <FileText className="w-4 h-4" /> PDF geral
-                  </Button>
-                  <Button type="button" onClick={() => exportJSON(data)}>
-                    <Download className="w-4 h-4" /> Backup JSON
                   </Button>
                 </>
               )}
@@ -396,10 +453,18 @@ export default function AdminDashboard({
                   <span className={labelClass}>E-mail institucional</span>
                   <input type="email" placeholder="professor@senaisp.edu.br" value={formProf.email} onChange={e => setFormProf({...formProf, email: e.target.value})} className={inputClass} required />
                 </label>
-                <label>
-                  <span className={labelClass}>Senha</span>
-                  <input type="password" placeholder="Senha de acesso" value={formProf.senha} onChange={e => setFormProf({...formProf, senha: e.target.value})} className={inputClass} required />
-                </label>
+                {showLegacyPasswordFields && (
+                  <label>
+                    <span className={labelClass}>Senha legada temporária</span>
+                    <input
+                      type="password"
+                      placeholder="Preencher apenas em ambiente de teste"
+                      value={formProf.senha || ''}
+                      onChange={e => setFormProf({ ...formProf, senha: e.target.value })}
+                      className={inputClass}
+                    />
+                  </label>
+                )}
               </div>
               <div>
                 <span className="ds-label">Vincular turmas</span>
@@ -418,7 +483,7 @@ export default function AdminDashboard({
               </div>
               <div className="flex gap-2 border-t border-slate-200 pt-4">
                 <Button type="submit" variant="primary">{editingProfessor ? 'Guardar' : 'Registrar'}</Button>
-                {editingProfessor && <Button type="button" onClick={() => {setEditingProfessor(null); setFormProf({nome:'', cpf:'', nif:'', telefone:'', email:'', senha:'', turmas:[]})}}>Cancelar</Button>}
+                {editingProfessor && <Button type="button" onClick={() => {setEditingProfessor(null); setFormProf({nome:'', cpf:'', nif:'', telefone:'', email:'', turmas:[]})}}>Cancelar</Button>}
               </div>
             </form>
             <div className="space-y-3">
@@ -467,10 +532,18 @@ export default function AdminDashboard({
                   <span className={labelClass}>Endereço</span>
                   <input type="text" placeholder="Rua, número, bairro e cidade" value={formEmpresa.endereco || ''} onChange={e => setFormEmpresa({...formEmpresa, endereco: e.target.value})} className={inputClass} />
                 </label>
-                <label>
-                  <span className={labelClass}>Senha</span>
-                  <input type="password" placeholder="Senha de acesso" value={formEmpresa.senha} onChange={e => setFormEmpresa({...formEmpresa, senha: e.target.value})} className={inputClass} required />
-                </label>
+                {showLegacyPasswordFields && (
+                  <label>
+                    <span className={labelClass}>Senha legada temporária</span>
+                    <input
+                      type="password"
+                      placeholder="Preencher apenas em ambiente de teste"
+                      value={formEmpresa.senha || ''}
+                      onChange={e => setFormEmpresa({ ...formEmpresa, senha: e.target.value })}
+                      className={inputClass}
+                    />
+                  </label>
+                )}
               </div>
               <div className="flex gap-2 border-t border-slate-200 pt-4">
                 <Button type="submit" variant="primary">{editingEmpresa ? 'Guardar' : 'Registrar'}</Button>
@@ -590,7 +663,7 @@ export default function AdminDashboard({
             <SectionHeader
               eyebrow="Sistema"
               title="Integracoes e dados"
-              description="Acompanhe conexoes e backups sem acoplar a interface aos servicos externos."
+              description="Acompanhe conexoes e sincronizacao sem acoplar a interface aos servicos externos."
             />
             <div className="ds-panel p-6">
               <h3 className="text-sm font-bold text-slate-800 mb-1 flex items-center gap-2"><Database className="w-4 h-4"/> Integração Supabase</h3>
@@ -620,12 +693,11 @@ export default function AdminDashboard({
               </div>
             </div>
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-              <h3 className="text-sm font-bold text-blue-900 mb-1 flex items-center gap-2"><Settings className="w-4 h-4"/> Backup de Dados</h3>
-              <p className="text-xs text-blue-700 mb-4">Os dados são sincronizados no Supabase. Mantenha estes ficheiros apenas como cópia de segurança local.</p>
+              <h3 className="text-sm font-bold text-blue-900 mb-1 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4"/> Relatorios operacionais</h3>
+              <p className="text-xs text-blue-700 mb-4">Exporte recortes em CSV ou PDF para conferencias administrativas e auditoria visual.</p>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => exportJSON(data)}><Download className="w-4 h-4" /> Backup (.json)</Button>
                 <Button onClick={() => exportExcelCSV(data.alunos, data, 'relatorio_completo')} variant="success"><FileSpreadsheet className="w-4 h-4" /> Excel (.csv)</Button>
-                <Button onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Completo', subtitle: 'Backup visual dos dados principais', prefix: 'relatorio_completo' })}><FileText className="w-4 h-4" /> PDF</Button>
+                <Button onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Completo', subtitle: 'Visao dos dados principais', prefix: 'relatorio_completo' })}><FileText className="w-4 h-4" /> PDF</Button>
               </div>
             </div>
           </div>

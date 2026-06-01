@@ -1,13 +1,4 @@
 // src/utils/utils.js
-export const exportJSON = (data) => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `somativa_backup_${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-};
-
 export const exportExcelCSV = (alunosParaExportar, data, prefix = 'relatorio') => {
   const BOM = "\uFEFF";
   let csvContent = "Nome do Aluno;CPF;Email;Telefone;Turma;Empresa;Status de Presença\n";

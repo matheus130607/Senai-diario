@@ -4,12 +4,14 @@ import {
   Contrast,
   Eye,
   Languages,
+  MousePointer2,
   Moon,
   Palette,
   RotateCcw,
   Scaling,
   Sun,
   Type,
+  ZapOff,
 } from 'lucide-react';
 import { Button, SectionHeader, StatusBadge } from './ui/DesignSystem';
 import { useUserSettings } from '../contexts/UserSettingsContext';
@@ -163,6 +165,13 @@ export default function AccessibilityPanel({ compact = false }) {
               checked={accessibility.focusMode}
               onChange={(value) => updateAccessibility({ focusMode: value })}
             />
+            <ToggleRow
+              icon={ZapOff}
+              label="Reduzir movimento"
+              description="Desativa transicoes e animacoes para uma navegacao mais estavel."
+              checked={accessibility.reducedMotion}
+              onChange={(value) => updateAccessibility({ reducedMotion: value })}
+            />
           </div>
         </section>
 
@@ -200,6 +209,7 @@ export default function AccessibilityPanel({ compact = false }) {
                 <option value="top-left">Topo esquerdo</option>
                 <option value="bottom-right">Base direita</option>
                 <option value="bottom-left">Base esquerda</option>
+                <option value="custom">Personalizada</option>
               </select>
             </label>
 
@@ -217,6 +227,17 @@ export default function AccessibilityPanel({ compact = false }) {
                 <option value="random">Aleatório</option>
               </select>
             </label>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              onClick={() => updateAccessibility({ librasPosition: 'right', librasCustomPosition: null })}
+              disabled={!librasActive || !accessibility.librasCustomPosition}
+            >
+              <MousePointer2 className="h-4 w-4" />
+              Reposicionar VLibras
+            </Button>
           </div>
 
           <div className="accessibility-status-panel">

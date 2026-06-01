@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { allowLegacyPasswordLogin } from '../utils/runtimeFlags';
 
 export const TABLES = {
   alunos: 'alunos',
@@ -13,6 +14,8 @@ export const TABLES = {
 const REALTIME_TABLES = Object.values(TABLES);
 const VALID_ATTENDANCE_STATUSES = new Set(['presente', 'falta', 'pendente']);
 const OPTIONAL_ATTENDANCE_COLUMNS = ['atraso', 'observacao', 'justificativa', 'termo', 'periodo'];
+const PRESENCE_HISTORY_DAYS = 180;
+const PRESENCE_HISTORY_LIMIT = 5000;
 
 const ensureSupabase = () => {
   if (!isSupabaseConfigured || !supabase) {
@@ -103,6 +106,19 @@ const getTodayDateOnly = () => {
   return new Date(today.getFullYear(), today.getMonth(), today.getDate());
 };
 
+const toDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addDaysToDateKey = (value, amount) => {
+  const parsed = parseDateOnly(value) || getTodayDateOnly();
+  parsed.setDate(parsed.getDate() + amount);
+  return toDateKey(parsed);
+};
+
 const resolveTurmaStatus = (status, dataFim) => {
   const endDate = parseDateOnly(dataFim);
   if (endDate && endDate < getTodayDateOnly()) return 'Concluido';
@@ -110,11 +126,7 @@ const resolveTurmaStatus = (status, dataFim) => {
 };
 
 export const getTodayAttendanceDate = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return toDateKey(new Date());
 };
 
 const mapTurmaFromDb = (turma) => {
@@ -136,14 +148,12 @@ const mapEmpresaFromDb = (empresa) => ({
   cnpj: textValue(empresa.cnpj),
   endereco: textValue(empresa.endereco),
   email: textValue(empresa.email),
-  senha: firstTextValue(empresa.senha, empresa.senha_hash),
 });
 
 const mapAdministradorFromDb = (admin) => ({
   id: idToString(admin.id),
   nome: textValue(admin.nome || 'Administrador'),
   email: textValue(admin.email),
-  senha: firstTextValue(admin.senha, admin.senha_hash),
   perfil: textValue(admin.perfil || admin.role || 'coordenacao'),
 });
 
@@ -168,7 +178,6 @@ const mapProfessorFromDb = (professor, turmas = []) => ({
   nif: textValue(professor.nif),
   telefone: textValue(professor.telefone),
   email: firstTextValue(professor.email, professor.email_institucional),
-  senha: firstTextValue(professor.senha, professor.senha_hash),
   turmas,
 });
 
@@ -214,7 +223,7 @@ const professorPayloadFromForm = (professor) => ({
   nif: textValue(professor.nif).trim(),
   telefone: textValue(professor.telefone).trim(),
   email_institucional: textValue(professor.email).trim(),
-  senha_hash: textValue(professor.senha),
+  ...(textValue(professor.senha).trim() ? { senha_hash: textValue(professor.senha) } : {}),
 });
 
 const turmaPayloadFromForm = (turma) => ({
@@ -230,7 +239,7 @@ const empresaPayloadFromForm = (empresa) => ({
   cnpj: textValue(empresa.cnpj).trim(),
   endereco: textValue(empresa.endereco).trim(),
   email: textValue(empresa.email).trim(),
-  senha_hash: textValue(empresa.senha),
+  ...(textValue(empresa.senha).trim() ? { senha_hash: textValue(empresa.senha) } : {}),
 });
 
 const alunoPayloadFromForm = (aluno) => ({
@@ -243,6 +252,14 @@ const alunoPayloadFromForm = (aluno) => ({
 });
 
 const loadUserProfile = async (authUserId, email) => {
+  const { data: claimedProfile, error: rpcError } = await supabase
+    .rpc('get_current_user_profile');
+
+  if (!rpcError && claimedProfile) return claimedProfile;
+  if (rpcError && !isMissingRelationError(rpcError, 'get_current_user_profile')) {
+    console.error('Erro ao vincular perfil Auth:', rpcError);
+  }
+
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
@@ -323,32 +340,29 @@ const hydrateAuthenticatedUser = async (profile, fallbackEmail) => {
   };
 };
 
-const loadAllPresencas = async () => {
-  const pageSize = 1000;
-  const rows = [];
-  let from = 0;
+const loadPresencasForWindow = async (attendanceDate, historyDays = PRESENCE_HISTORY_DAYS) => {
+  const endDate = attendanceDate || getTodayAttendanceDate();
+  const startDate = addDaysToDateKey(endDate, -Math.max(1, Number(historyDays) || PRESENCE_HISTORY_DAYS));
 
-  while (true) {
-    const to = from + pageSize - 1;
-    const { data, error } = await supabase
-      .from(TABLES.presencas)
-      .select('*')
-      .order('data', { ascending: true })
-      .range(from, to);
+  const { data, error } = await supabase
+    .from(TABLES.presencas)
+    .select('*')
+    .gte('data', startDate)
+    .lte('data', endDate)
+    .order('data', { ascending: false })
+    .limit(PRESENCE_HISTORY_LIMIT);
 
-    throwIfError(error);
+  throwIfError(error);
 
-    const page = data || [];
-    rows.push(...page);
-
-    if (page.length < pageSize) break;
-    from += pageSize;
-  }
-
-  return rows.map(mapPresencaFromDb);
+  return {
+    startDate,
+    endDate,
+    limit: PRESENCE_HISTORY_LIMIT,
+    rows: (data || []).map(mapPresencaFromDb),
+  };
 };
 
-export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()) => {
+export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate(), options = {}) => {
   ensureSupabase();
 
   const [
@@ -358,7 +372,7 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     alunosResult,
     administradoresResult,
     professoresTurmasResult,
-    presencas,
+    presencasResult,
   ] = await Promise.all([
     supabase.from(TABLES.turmas).select('*').order('nome', { ascending: true }),
     supabase.from(TABLES.professores).select('*').order('nome', { ascending: true }),
@@ -366,7 +380,7 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     supabase.from(TABLES.alunos).select('*').order('nome', { ascending: true }),
     supabase.from(TABLES.administradores).select('*').order('nome', { ascending: true }),
     supabase.from(TABLES.professoresTurmas).select('*'),
-    loadAllPresencas(),
+    loadPresencasForWindow(attendanceDate, options.presenceHistoryDays),
   ]);
 
   [
@@ -378,6 +392,7 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     professoresTurmasResult,
   ].forEach(({ error }) => throwIfError(error));
 
+  const presencas = presencasResult.rows;
   const selectedDatePresencas = presencas.filter((presenca) => presenca.data === attendanceDate);
   const statusByAlunoId = new Map(
     selectedDatePresencas.map((presenca) => [presenca.alunoId, presenca.status]),
@@ -404,6 +419,9 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
     config: {
       provider: 'supabase',
       attendanceDate,
+      presenceHistoryStart: presencasResult.startDate,
+      presenceHistoryEnd: presencasResult.endDate,
+      presenceHistoryLimit: presencasResult.limit,
     },
   };
 };
@@ -440,6 +458,11 @@ export const authenticateSupabaseUser = async ({ role, email, password }) => {
     }
 
     await supabase.auth.signOut?.();
+    if (!allowLegacyPasswordLogin) {
+      throw new Error('Conta autenticada, mas sem perfil ativo vinculado em user_profiles.');
+    }
+  } else if (!allowLegacyPasswordLogin) {
+    throw new Error('E-mail ou senha incorretos no Supabase Auth.');
   }
 
   const tableByRole = {
@@ -503,6 +526,29 @@ export const authenticateSupabaseUser = async ({ role, email, password }) => {
     nome: admin.nome || 'Administrador',
     email: admin.email,
   };
+};
+
+export const updateSupabasePassword = async ({ currentPassword, nextPassword, email }) => {
+  ensureSupabase();
+
+  const normalizedEmail = textValue(email).trim().toLowerCase();
+  const current = textValue(currentPassword).trim();
+  const next = textValue(nextPassword).trim();
+
+  if (!next || next.length < 6) {
+    throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
+  }
+
+  if (current && normalizedEmail) {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: current,
+    });
+    if (signInError) throw new Error('Senha atual incorreta.');
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: next });
+  throwIfError(error);
 };
 
 export const subscribeToSupabaseData = (onChange, onError) => {

@@ -17,7 +17,7 @@ create table if not exists public.empresas (
   cnpj text,
   endereco text,
   email text not null unique,
-  senha_hash text not null,
+  senha_hash text,
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
@@ -29,7 +29,7 @@ create table if not exists public.professores (
   nif text not null,
   telefone text not null,
   email_institucional text not null unique,
-  senha_hash text not null,
+  senha_hash text,
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
@@ -39,12 +39,15 @@ create table if not exists public.administradores (
   nome text not null default 'Administrador',
   email text unique,
   perfil text not null default 'coordenacao',
-  senha_hash text not null,
+  senha_hash text,
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
 
 alter table public.administradores add column if not exists perfil text not null default 'coordenacao';
+alter table public.empresas alter column senha_hash drop not null;
+alter table public.professores alter column senha_hash drop not null;
+alter table public.administradores alter column senha_hash drop not null;
 
 create table if not exists public.alunos (
   id uuid primary key default gen_random_uuid(),
@@ -95,6 +98,7 @@ alter table public.presencas add column if not exists termo text;
 alter table public.presencas add column if not exists periodo text;
 
 create index if not exists idx_presencas_data on public.presencas (data);
+create index if not exists idx_presencas_aluno_data on public.presencas (aluno_id, data);
 create index if not exists idx_presencas_turma_data on public.presencas (turma_id, data);
 create index if not exists idx_presencas_professor_data on public.presencas (professor_id, data);
 
@@ -150,7 +154,10 @@ create table if not exists public.email_automation_logs (
   attempts integer not null default 1,
   message text,
   started_at timestamptz not null default now(),
-  finished_at timestamptz
+  finished_at timestamptz,
+  automation_client_id text,
+  automation_name text,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.tic_access_logs (
@@ -177,6 +184,7 @@ alter table public.email_automations add column if not exists client_id text uni
 alter table public.email_automation_logs add column if not exists client_id text unique;
 create unique index if not exists idx_email_automations_client_id on public.email_automations (client_id) where client_id is not null;
 create unique index if not exists idx_email_automation_logs_client_id on public.email_automation_logs (client_id) where client_id is not null;
+create index if not exists idx_user_profiles_lower_email on public.user_profiles (lower(email));
 
 alter table public.turmas enable row level security;
 alter table public.empresas enable row level security;
@@ -343,6 +351,56 @@ set search_path = public
 as $$
   select lower(coalesce(auth.jwt() ->> 'email', ''))
 $$;
+
+create or replace function public.get_current_user_profile()
+returns public.user_profiles
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  profile public.user_profiles;
+  current_uid uuid := auth.uid();
+  jwt_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if current_uid is null then
+    return null;
+  end if;
+
+  select *
+  into profile
+  from public.user_profiles
+  where auth_user_id = current_uid
+    and status = 'active'
+  limit 1;
+
+  if profile.id is not null then
+    return profile;
+  end if;
+
+  if jwt_email = '' then
+    return null;
+  end if;
+
+  update public.user_profiles
+  set auth_user_id = current_uid,
+      updated_at = now()
+  where id = (
+    select id
+    from public.user_profiles
+    where auth_user_id is null
+      and lower(email) = jwt_email
+      and status = 'active'
+    order by created_at asc
+    limit 1
+  )
+  returning * into profile;
+
+  return profile;
+end;
+$$;
+
+grant execute on function public.get_current_user_profile() to authenticated;
 
 drop policy if exists "turmas_select" on public.turmas;
 drop policy if exists "turmas_insert" on public.turmas;
@@ -525,10 +583,13 @@ create policy "email_automation_logs_delete" on public.email_automation_logs for
 
 drop policy if exists "tic_access_logs_select" on public.tic_access_logs;
 drop policy if exists "tic_access_logs_insert" on public.tic_access_logs;
+drop policy if exists "tic_access_logs_insert_anon" on public.tic_access_logs;
+drop policy if exists "tic_access_logs_insert_auth" on public.tic_access_logs;
 drop policy if exists "tic_access_logs_update" on public.tic_access_logs;
 drop policy if exists "tic_access_logs_delete" on public.tic_access_logs;
+create policy "tic_access_logs_insert_anon" on public.tic_access_logs for insert to anon with check (true);
+create policy "tic_access_logs_insert_auth" on public.tic_access_logs for insert to authenticated with check (true);
 create policy "tic_access_logs_select" on public.tic_access_logs for select to authenticated using (public.current_app_role() = 'tic');
-create policy "tic_access_logs_insert" on public.tic_access_logs for insert to authenticated with check (true);
 create policy "tic_access_logs_update" on public.tic_access_logs for update to authenticated using (public.current_app_role() = 'tic') with check (public.current_app_role() = 'tic');
 create policy "tic_access_logs_delete" on public.tic_access_logs for delete to authenticated using (public.current_app_role() = 'tic');
 

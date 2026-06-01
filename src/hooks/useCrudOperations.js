@@ -24,7 +24,6 @@ export const emptyEmpresaForm = {
   cnpj: '',
   endereco: '',
   email: '',
-  senha: '',
 };
 
 export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
@@ -111,7 +110,7 @@ export const useCrudOperations = (data, setData, showToast, requestConfirm) => {
       }
 
       showToast(editingProfessor ? 'Professor atualizado!' : 'Professor criado!');
-      setFormProf({ nome: '', cpf: '', nif: '', telefone: '', email: '', senha: '', turmas: [] });
+      setFormProf({ nome: '', cpf: '', nif: '', telefone: '', email: '', turmas: [] });
       setEditingProfessor(null);
     } catch (error) {
       showCrudError('salvar professor', error);
