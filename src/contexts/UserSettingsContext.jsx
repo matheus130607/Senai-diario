@@ -1,82 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from './AuthContext';
 import { isSupabaseConfigured, supabase } from '../services/supabaseClient';
-
-const STORAGE_KEY = 'senai-diario:user-settings:v1';
-
-const defaultAccessibility = {
-  theme: 'light',
-  highContrast: false,
-  colorScheme: 'senai',
-  fontScale: 1,
-  spacing: 'comfortable',
-  interfaceScale: 1,
-  focusMode: true,
-  reducedMotion: false,
-  keyboardShortcuts: true,
-  screenReaderHints: true,
-  librasEnabled: true,
-  librasProvider: 'vlibras',
-  librasPosition: 'right',
-  librasAvatar: 'icaro',
-  librasCustomPosition: null,
-};
-
-const ACCESSIBILITY_OPTIONS = {
-  theme: ['light', 'dark', 'system'],
-  colorScheme: ['senai', 'blue', 'green', 'mono'],
-  spacing: ['compact', 'comfortable', 'wide'],
-  librasProvider: ['vlibras', 'disabled'],
-  librasPosition: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'custom'],
-  librasAvatar: ['icaro', 'hosana', 'guga', 'random'],
-};
-
-const clampNumber = (value, min, max, fallback) => {
-  const numberValue = Number(value);
-  if (!Number.isFinite(numberValue)) return fallback;
-  return Math.min(max, Math.max(min, numberValue));
-};
-
-const chooseOption = (value, options, fallback) => (
-  options.includes(value) ? value : fallback
-);
-
-const normalizeLibrasCustomPosition = (position) => {
-  if (!position || typeof position !== 'object') return null;
-  const x = Number(position.x);
-  const y = Number(position.y);
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-  return {
-    x: Math.max(8, Math.round(x)),
-    y: Math.max(8, Math.round(y)),
-  };
-};
-
-const normalizeAccessibility = (accessibility = {}) => {
-  const legacyProvider = accessibility.librasProvider;
-  const provider = legacyProvider === 'disabled' ? 'disabled' : 'vlibras';
-  const hasEnabledSetting = typeof accessibility.librasEnabled === 'boolean';
-
-  return {
-    ...defaultAccessibility,
-    ...accessibility,
-    theme: chooseOption(accessibility.theme, ACCESSIBILITY_OPTIONS.theme, defaultAccessibility.theme),
-    highContrast: Boolean(accessibility.highContrast),
-    colorScheme: chooseOption(accessibility.colorScheme, ACCESSIBILITY_OPTIONS.colorScheme, defaultAccessibility.colorScheme),
-    fontScale: clampNumber(accessibility.fontScale, 0.9, 1.25, defaultAccessibility.fontScale),
-    spacing: chooseOption(accessibility.spacing, ACCESSIBILITY_OPTIONS.spacing, defaultAccessibility.spacing),
-    interfaceScale: clampNumber(accessibility.interfaceScale, 0.95, 1.15, defaultAccessibility.interfaceScale),
-    focusMode: accessibility.focusMode !== false,
-    reducedMotion: Boolean(accessibility.reducedMotion),
-    keyboardShortcuts: true,
-    screenReaderHints: true,
-    librasProvider: chooseOption(provider, ACCESSIBILITY_OPTIONS.librasProvider, defaultAccessibility.librasProvider),
-    librasEnabled: hasEnabledSetting ? accessibility.librasEnabled : legacyProvider !== 'disabled',
-    librasPosition: chooseOption(accessibility.librasPosition, ACCESSIBILITY_OPTIONS.librasPosition, defaultAccessibility.librasPosition),
-    librasAvatar: chooseOption(accessibility.librasAvatar, ACCESSIBILITY_OPTIONS.librasAvatar, defaultAccessibility.librasAvatar),
-    librasCustomPosition: normalizeLibrasCustomPosition(accessibility.librasCustomPosition),
-  };
-};
+import {
+  DEFAULT_ACCESSIBILITY,
+  applyAccessibilityToDocument,
+  normalizeAccessibility,
+  persistAccessibilitySnapshot,
+  persistSettings,
+  readStoredSettings,
+} from '../utils/accessibilityPreferences';
 
 const defaultNotifications = {
   weeklyReports: true,
@@ -94,26 +26,13 @@ const createDefaultSettings = () => ({
     foto: '',
     bio: '',
   },
-  accessibility: defaultAccessibility,
+  accessibility: DEFAULT_ACCESSIBILITY,
   notifications: defaultNotifications,
   accessLogs: [],
   security: {
     passwordUpdatedAt: '',
   },
 });
-
-const readStoredSettings = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
-
-const persistSettings = (settings) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-};
 
 const persistRemoteSettings = (userKey, userRole, settings) => {
   if (!isSupabaseConfigured || !supabase || !userKey || userKey === 'anonymous') return;
@@ -287,7 +206,7 @@ export function UserSettingsProvider({ children }) {
   const resetAccessibility = useCallback(() => {
     updateCurrentSettings((current) => ({
       ...current,
-      accessibility: defaultAccessibility,
+      accessibility: DEFAULT_ACCESSIBILITY,
     }));
   }, [updateCurrentSettings]);
 
@@ -330,16 +249,7 @@ export function UserSettingsProvider({ children }) {
 
   useEffect(() => {
     const accessibility = settings.accessibility;
-    const root = document.documentElement;
-    root.dataset.contrast = accessibility.highContrast ? 'high' : 'normal';
-    root.dataset.colorScheme = accessibility.colorScheme;
-    root.dataset.spacing = accessibility.spacing;
-    root.dataset.focusMode = accessibility.focusMode ? 'enhanced' : 'standard';
-    root.dataset.reducedMotion = accessibility.reducedMotion ? 'true' : 'false';
-    root.dataset.libras = accessibility.librasEnabled && accessibility.librasProvider === 'vlibras' ? 'enabled' : 'disabled';
-    root.style.setProperty('--user-font-scale', String(accessibility.fontScale));
-    root.style.setProperty('--user-interface-scale', String(accessibility.interfaceScale));
-    root.style.setProperty('--user-font-size', `${(16 * accessibility.fontScale * accessibility.interfaceScale).toFixed(2)}px`);
+    persistAccessibilitySnapshot(accessibility);
 
     const mediaQuery = window.matchMedia?.('(prefers-color-scheme: dark)');
     const applyTheme = () => {
@@ -347,8 +257,7 @@ export function UserSettingsProvider({ children }) {
         ? mediaQuery?.matches ? 'dark' : 'light'
         : accessibility.theme;
 
-      root.dataset.theme = resolvedTheme;
-      root.dataset.themePreference = accessibility.theme;
+      applyAccessibilityToDocument(accessibility, resolvedTheme);
     };
 
     applyTheme();
