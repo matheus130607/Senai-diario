@@ -58,9 +58,9 @@ function EventPills({ events }) {
   const summary = getAttendanceSummary(events);
   return (
     <div className="mt-2 flex flex-wrap gap-1">
-      {summary.presentes > 0 && <span className="calendar-dot bg-emerald-500" title={`${summary.presentes} presença(s)`} />}
-      {summary.faltas > 0 && <span className="calendar-dot bg-red-500" title={`${summary.faltas} falta(s)`} />}
-      {summary.atrasos > 0 && <span className="calendar-dot bg-amber-500" title={`${summary.atrasos} atraso(s)`} />}
+      {summary.presentes > 0 && <span className="calendar-dot bg-zinc-700" title={`${summary.presentes} presença(s)`} />}
+      {summary.faltas > 0 && <span className="calendar-dot bg-zinc-500" title={`${summary.faltas} falta(s)`} />}
+      {summary.atrasos > 0 && <span className="calendar-dot bg-zinc-400" title={`${summary.atrasos} atraso(s)`} />}
       {summary.pendentes > 0 && <span className="calendar-dot bg-slate-400" title={`${summary.pendentes} pendência(s)`} />}
     </div>
   );
@@ -183,7 +183,7 @@ export default function AcademicCalendar({ data, currentUser }) {
               <span className="ds-badge">{monthEvents.length}</span>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${summary.presencaPercentual}%` }} />
+              <div className="h-full rounded-full bg-zinc-900" style={{ width: `${summary.presencaPercentual}%` }} />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
               <span>{summary.presentes} pres.</span>
@@ -388,7 +388,7 @@ export default function AcademicCalendar({ data, currentUser }) {
 
             <div className="my-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <FileText className="h-4 w-4 text-red-600" />
+                <FileText className="h-4 w-4 text-zinc-600" />
                 Resumo do período filtrado
               </div>
               <p className="text-sm leading-6 text-slate-600">

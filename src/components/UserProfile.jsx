@@ -176,7 +176,7 @@ export default function UserProfile({ currentUser, showToast }) {
 
           <form onSubmit={handlePasswordSubmit} className="profile-card">
             <div className="mb-5 flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-red-600" />
+              <KeyRound className="h-5 w-5 text-zinc-600" />
               <h3 className="text-base font-semibold text-slate-950">Alterar senha</h3>
             </div>
             <div className="form-grid">
@@ -220,7 +220,7 @@ export default function UserProfile({ currentUser, showToast }) {
 
           <div className="profile-card">
             <div className="mb-5 flex items-center gap-2">
-              <Bell className="h-5 w-5 text-red-600" />
+              <Bell className="h-5 w-5 text-zinc-600" />
               <h3 className="text-base font-semibold text-slate-950">Notificações</h3>
             </div>
             <div className="notification-grid">
@@ -253,7 +253,7 @@ export default function UserProfile({ currentUser, showToast }) {
         <aside className="profile-side">
           <div className="profile-card">
             <div className="mb-4 flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-red-600" />
+              <ShieldCheck className="h-5 w-5 text-zinc-600" />
               <h3 className="text-base font-semibold text-slate-950">Permissões</h3>
             </div>
             <StatusBadge tone={currentUser?.role === 'tic' ? 'warning' : 'success'}>
@@ -262,7 +262,7 @@ export default function UserProfile({ currentUser, showToast }) {
             <div className="mt-4 space-y-2">
               {permissions.map((permission) => (
                 <div key={permission} className="permission-row">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <CheckCircle2 className="h-4 w-4 text-zinc-600" />
                   <span>{permission}</span>
                 </div>
               ))}
@@ -271,7 +271,7 @@ export default function UserProfile({ currentUser, showToast }) {
 
           <div className="profile-card">
             <div className="mb-4 flex items-center gap-2">
-              <History className="h-5 w-5 text-red-600" />
+              <History className="h-5 w-5 text-zinc-600" />
               <h3 className="text-base font-semibold text-slate-950">Histórico de acessos</h3>
             </div>
             <div className="space-y-3">

@@ -31,9 +31,9 @@ const normalizeText = (value) => String(value || '').toLowerCase();
 function MetricBox({ label, value, icon: Icon, tone = 'slate' }) {
   const toneClass = {
     slate: 'text-slate-500 bg-slate-100',
-    green: 'text-emerald-600 bg-emerald-50',
-    red: 'text-red-600 bg-red-50',
-    amber: 'text-amber-600 bg-amber-50',
+    green: 'text-zinc-600 bg-zinc-100',
+    red: 'text-zinc-600 bg-zinc-100',
+    amber: 'text-zinc-600 bg-zinc-100',
   }[tone];
 
   return (
@@ -189,7 +189,7 @@ export default function AttendanceHistory({ data, currentUser }) {
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
                       <h4 className="flex items-center gap-2 text-base font-semibold text-slate-950">
-                        <BarChart3 className="h-4 w-4 text-red-600" />
+                        <BarChart3 className="h-4 w-4 text-zinc-600" />
                         Evolução mensal
                       </h4>
                       <p className="mt-1 text-xs text-slate-500">Percentual de presença por mês com base nos registros disponíveis.</p>
@@ -212,7 +212,7 @@ export default function AttendanceHistory({ data, currentUser }) {
 
                 <div className="history-table-panel">
                   <div className="mb-4 flex items-center gap-2 text-base font-semibold text-slate-950">
-                    <FileText className="h-4 w-4 text-red-600" />
+                    <FileText className="h-4 w-4 text-zinc-600" />
                     Histórico completo
                   </div>
 

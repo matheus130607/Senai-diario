@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Contrast,
   Eye,
+<<<<<<< HEAD
   Languages,
   MousePointer2,
   Moon,
@@ -11,6 +12,10 @@ import {
   Scaling,
   Sun,
   Type,
+=======
+  RotateCcw,
+  SlidersHorizontal,
+>>>>>>> d194492 (test-design)
   ZapOff,
 } from 'lucide-react';
 import { Button, SectionHeader, StatusBadge } from './ui/DesignSystem';
@@ -42,7 +47,7 @@ function RangeControl({ label, value, min, max, step, onChange, ariaLabel }) {
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-red-600"
+        className="w-full accent-zinc-900"
         aria-label={ariaLabel}
       />
       <span className="accessibility-value">{Math.round(value * 100)}%</span>
@@ -81,10 +86,15 @@ export default function AccessibilityPanel({ compact = false }) {
       <div className="accessibility-layout">
         <section className="accessibility-card">
           <div className="accessibility-card-header">
-            <Palette className="h-5 w-5 text-red-600" />
+            <SlidersHorizontal className="h-5 w-5 text-zinc-600" />
             <div>
+<<<<<<< HEAD
               <h3>Aparência</h3>
               <p>Tema, cores, leitura e densidade visual.</p>
+=======
+              <h3>Aparencia</h3>
+              <p>Tema, leitura, contraste e densidade visual.</p>
+>>>>>>> d194492 (test-design)
             </div>
           </div>
 
@@ -102,6 +112,7 @@ export default function AccessibilityPanel({ compact = false }) {
               </select>
             </label>
 
+<<<<<<< HEAD
             <label>
               <span className="ds-label">Cores</span>
               <select
@@ -116,6 +127,8 @@ export default function AccessibilityPanel({ compact = false }) {
               </select>
             </label>
 
+=======
+>>>>>>> d194492 (test-design)
             <RangeControl
               label="Tamanho da fonte"
               min="0.9"

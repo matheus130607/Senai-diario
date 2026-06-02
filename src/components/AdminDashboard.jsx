@@ -184,20 +184,20 @@ export default function AdminDashboard({
         </div>
 
         {turmasProximasDoFim.length > 0 && (
-          <div className="m-6 mb-0 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="m-6 mb-0 rounded-lg border border-zinc-200 bg-white p-4 text-zinc-900">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-zinc-600" />
                 <div>
                   <h3 className="text-sm font-bold">Turmas proximas da data final</h3>
-                  <p className="text-xs text-amber-800 mt-1">
+                  <p className="text-xs text-zinc-500 mt-1">
                     Estas turmas estao a ate 30 dias do encerramento. Apos a data final, o status passa automaticamente para Concluido.
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 md:justify-end">
                 {turmasProximasDoFim.map((turma) => (
-                  <span key={turma.id} className="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-800">
+                  <span key={turma.id} className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700">
                     {turma.nome}: {turma.diasRestantes === 0 ? 'encerra hoje' : `${turma.diasRestantes} dia(s)`}
                   </span>
                 ))}
@@ -414,8 +414,8 @@ export default function AdminDashboard({
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
-                    <IconButton title="Editar turma" onClick={() => {setEditingTurma(turma.id); setFormTurma({...emptyTurmaForm, ...turma})}} className="text-blue-600 hover:text-blue-700"><Edit className="w-4 h-4"/></IconButton>
-                    <IconButton title="Excluir turma" onClick={() => crudOps.deleteTurma(turma.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4"/></IconButton>
+                    <IconButton title="Editar turma" onClick={() => {setEditingTurma(turma.id); setFormTurma({...emptyTurmaForm, ...turma})}} className="text-zinc-500 hover:text-zinc-950"><Edit className="w-4 h-4"/></IconButton>
+                    <IconButton title="Excluir turma" onClick={() => crudOps.deleteTurma(turma.id)} className="text-zinc-500 hover:text-zinc-950"><Trash2 className="w-4 h-4"/></IconButton>
                   </div>
                 </div>
               ))}
@@ -474,7 +474,7 @@ export default function AdminDashboard({
                     const isSelected = formProf.turmas.includes(t.id);
                     return (
                       <button key={t.id} type="button" onClick={() => toggleProfTurma(t.id)}
-                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${isSelected ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors duration-150 ${isSelected ? 'border-zinc-900 bg-zinc-100 text-zinc-950' : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'}`}>
                         {isSelected ? <CheckSquare className="w-4 h-4"/> : <Square className="w-4 h-4"/>} {t.nome}
                       </button>
                     );
@@ -497,8 +497,8 @@ export default function AdminDashboard({
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <IconButton title="Editar professor" onClick={() => {setEditingProfessor(prof.id); setFormProf(prof)}} className="text-blue-600 hover:text-blue-700"><Edit className="w-4 h-4"/></IconButton>
-                    <IconButton title="Excluir professor" onClick={() => crudOps.deleteProfessor(prof.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4"/></IconButton>
+                    <IconButton title="Editar professor" onClick={() => {setEditingProfessor(prof.id); setFormProf(prof)}} className="text-zinc-500 hover:text-zinc-950"><Edit className="w-4 h-4"/></IconButton>
+                    <IconButton title="Excluir professor" onClick={() => crudOps.deleteProfessor(prof.id)} className="text-zinc-500 hover:text-zinc-950"><Trash2 className="w-4 h-4"/></IconButton>
                   </div>
                 </div>
               ))}
@@ -561,8 +561,8 @@ export default function AdminDashboard({
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <IconButton title="Editar empresa" onClick={() => {setEditingEmpresa(emp.id); setFormEmpresa({...emptyEmpresaForm, ...emp})}} className="text-blue-600 hover:text-blue-700"><Edit className="w-4 h-4"/></IconButton>
-                    <IconButton title="Excluir empresa" onClick={() => crudOps.deleteEmpresa(emp.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4"/></IconButton>
+                    <IconButton title="Editar empresa" onClick={() => {setEditingEmpresa(emp.id); setFormEmpresa({...emptyEmpresaForm, ...emp})}} className="text-zinc-500 hover:text-zinc-950"><Edit className="w-4 h-4"/></IconButton>
+                    <IconButton title="Excluir empresa" onClick={() => crudOps.deleteEmpresa(emp.id)} className="text-zinc-500 hover:text-zinc-950"><Trash2 className="w-4 h-4"/></IconButton>
                   </div>
                 </div>
               ))}
@@ -632,11 +632,11 @@ export default function AdminDashboard({
                       <td className="px-4 py-3 text-slate-500">{aluno.email}</td>
                       <td className="px-4 py-3 text-slate-500 space-y-1">
                         <span className="ds-badge">{data.turmas.find(t=>t.id===aluno.turmaId)?.nome || 'Sem Turma'}</span>
-                        {aluno.empresaId && <span className="ml-1 text-xs font-semibold text-amber-700">{data.empresas.find(e=>e.id===aluno.empresaId)?.nome}</span>}
+                        {aluno.empresaId && <span className="ml-1 text-xs font-semibold text-zinc-600">{data.empresas.find(e=>e.id===aluno.empresaId)?.nome}</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <IconButton title="Editar aluno" onClick={() => {setEditingAluno(aluno.id); setFormAluno(aluno)}} className="mr-1 text-blue-600 hover:text-blue-700"><Edit className="w-4 h-4"/></IconButton>
-                        <IconButton title="Excluir aluno" onClick={() => crudOps.deleteAluno(aluno.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4"/></IconButton>
+                        <IconButton title="Editar aluno" onClick={() => {setEditingAluno(aluno.id); setFormAluno(aluno)}} className="mr-1 text-zinc-500 hover:text-zinc-950"><Edit className="w-4 h-4"/></IconButton>
+                        <IconButton title="Excluir aluno" onClick={() => crudOps.deleteAluno(aluno.id)} className="text-zinc-500 hover:text-zinc-950"><Trash2 className="w-4 h-4"/></IconButton>
                       </td>
                     </tr>
                   ))}
@@ -648,7 +648,7 @@ export default function AdminDashboard({
 
         {!canManageRecords && ['turmas', 'professores', 'empresas', 'alunos', 'vinculos'].includes(adminTab) && (
           <div className="p-6">
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
+            <div className="rounded-lg border border-zinc-200 bg-white p-6 text-zinc-900">
               <h3 className="text-base font-bold">Área operacional da Secretaria</h3>
               <p className="mt-2 text-sm leading-6">
                 Este módulo altera cadastros e vínculos acadêmicos. A Coordenação acompanha estes dados por indicadores,
@@ -671,7 +671,7 @@ export default function AdminDashboard({
               <div className="mb-4 overflow-hidden rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
                   <span className="text-xs font-semibold text-slate-500 uppercase">Estado</span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : syncStatus === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700">
                     {syncLabels[syncStatus] || syncStatus}
                   </span>
                 </div>
@@ -692,9 +692,9 @@ export default function AdminDashboard({
                 <Button onClick={handleReloadData} disabled={!isSupabaseConfigured}><RefreshCw className="w-4 h-4" /> Recarregar dados</Button>
               </div>
             </div>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-              <h3 className="text-sm font-bold text-blue-900 mb-1 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4"/> Relatorios operacionais</h3>
-              <p className="text-xs text-blue-700 mb-4">Exporte recortes em CSV ou PDF para conferencias administrativas e auditoria visual.</p>
+            <div className="rounded-lg border border-zinc-200 bg-white p-6">
+              <h3 className="text-sm font-bold text-zinc-900 mb-1 flex items-center gap-2"><FileSpreadsheet className="w-4 h-4"/> Relatorios operacionais</h3>
+              <p className="text-xs text-zinc-500 mb-4">Exporte recortes em CSV ou PDF para conferencias administrativas e auditoria visual.</p>
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => exportExcelCSV(data.alunos, data, 'relatorio_completo')} variant="success"><FileSpreadsheet className="w-4 h-4" /> Excel (.csv)</Button>
                 <Button onClick={() => exportPDFReport({ alunosParaExportar: data.alunos, data, title: 'Relatório Completo', subtitle: 'Visao dos dados principais', prefix: 'relatorio_completo' })}><FileText className="w-4 h-4" /> PDF</Button>

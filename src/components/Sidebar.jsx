@@ -100,7 +100,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed bottom-0 left-0 top-16 z-30 transform border-r border-slate-200 bg-[#fbfbfd]/92 backdrop-blur-xl transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
+      className={`fixed bottom-0 left-0 top-16 z-30 transform border-r border-zinc-200 bg-white/95 backdrop-blur-xl transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}
       style={{ width: `${sidebarWidth}px` }}
     >
       <div className="flex h-full flex-col">
@@ -113,18 +113,18 @@ export default function Sidebar({
               <button
                 key={tab.id}
                 onClick={() => onTabClick(tab.id)}
-                className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${isActive ? 'bg-white text-slate-950 ring-1 ring-slate-200' : 'text-slate-500 hover:bg-white/70 hover:text-slate-900'}`}
+                className={`group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors duration-150 ${isActive ? 'bg-zinc-100 text-zinc-950 ring-1 ring-zinc-200' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950'}`}
               >
-                {isActive && <span className="absolute left-0 h-5 w-0.5 rounded-r-full bg-red-600" />}
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-red-600' : 'text-slate-400 group-hover:text-slate-700'}`} />
+                {isActive && <span className="absolute left-0 h-5 w-0.5 rounded-r-full bg-zinc-950" />}
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-zinc-950' : 'text-zinc-400 group-hover:text-zinc-700'}`} />
                 <span className="truncate font-medium">{tab.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="mx-4 mb-5 border-t border-slate-200 pt-4">
-          <blockquote className="text-sm font-medium leading-6 text-slate-900">
+        <div className="mx-4 mb-5 border-t border-zinc-200 pt-4">
+          <blockquote className="text-sm font-medium leading-6 text-zinc-900">
             "Educação profissional que transforma o futuro da indústria."
           </blockquote>
         </div>
@@ -134,7 +134,7 @@ export default function Sidebar({
         <button
           type="button"
           onPointerDown={startResize}
-          className="absolute right-[-5px] top-0 hidden h-full w-2 cursor-col-resize touch-none bg-transparent transition-colors hover:bg-red-500/20 lg:block"
+          className="absolute right-[-5px] top-0 hidden h-full w-2 cursor-col-resize touch-none bg-transparent transition-colors duration-150 hover:bg-zinc-200 lg:block"
           aria-label="Redimensionar menu lateral"
         />
       )}

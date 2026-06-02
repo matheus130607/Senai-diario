@@ -167,22 +167,27 @@ export default function AutomationCenter({ data, showToast }) {
 
       <div className="automation-metrics-grid">
         <div className="automation-kpi">
-          <Mail className="h-5 w-5 text-red-600" />
+          <Mail className="h-5 w-5 text-zinc-500" />
           <span>Comunicados ativos</span>
           <strong>{activeAutomations}</strong>
         </div>
         <div className="automation-kpi">
+<<<<<<< HEAD
           <Activity className="h-5 w-5 text-emerald-600" />
           <span>Frequência semanal</span>
+=======
+          <Activity className="h-5 w-5 text-zinc-500" />
+          <span>Frequencia semanal</span>
+>>>>>>> d194492 (test-design)
           <strong>{metrics.frequencia}%</strong>
         </div>
         <div className="automation-kpi">
-          <Clock3 className="h-5 w-5 text-amber-600" />
+          <Clock3 className="h-5 w-5 text-zinc-500" />
           <span>Fila atual</span>
           <strong>{queuedMessages}</strong>
         </div>
         <div className="automation-kpi">
-          <ShieldAlert className="h-5 w-5 text-red-600" />
+          <ShieldAlert className="h-5 w-5 text-zinc-500" />
           <span>Falhas recentes</span>
           <strong>{failureCount}</strong>
         </div>
@@ -231,7 +236,7 @@ export default function AutomationCenter({ data, showToast }) {
                     <IconButton title="Editar" onClick={() => editAutomation(automation)}>
                       <Edit className="h-4 w-4" />
                     </IconButton>
-                    <IconButton title="Excluir" onClick={() => deleteAutomation(automation.id)} className="text-red-600">
+                    <IconButton title="Excluir" onClick={() => deleteAutomation(automation.id)} className="text-zinc-500 hover:text-zinc-950">
                       <Trash2 className="h-4 w-4" />
                     </IconButton>
                   </div>

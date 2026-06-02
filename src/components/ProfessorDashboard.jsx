@@ -17,7 +17,15 @@ import {
 } from 'lucide-react';
 import DashboardView from './DashboardView';
 import SearchableSelect from './ui/SearchableSelect';
+<<<<<<< HEAD
 import { AvatarInitial, Button, EmptyState, SectionHeader, StatusBadge } from './ui/DesignSystem';
+=======
+import DatePicker from './ui/DatePicker';
+import PersonAvatar from './ui/PersonAvatar';
+import StudentPhotoModal from './ui/StudentPhotoModal';
+import { Button, EmptyState, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+>>>>>>> d194492 (test-design)
 import AcademicCalendar from './AcademicCalendar';
 import AccessibilityPanel from './AccessibilityPanel';
 import UserProfile from './UserProfile';
@@ -270,7 +278,7 @@ export default function ProfessorDashboard({
                 <div className="border-b border-slate-200 bg-white px-6 py-5">
                   <div className="attendance-toolbar-grid">
                     <div className="attendance-field-with-icon">
-                      <div className="hidden h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600 sm:flex">
+                      <div className="hidden h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 sm:flex">
                         <BookOpen className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
@@ -330,6 +338,29 @@ export default function ProfessorDashboard({
                       />
                     </div>
                   </div>
+<<<<<<< HEAD
+=======
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="neutral"
+                      onClick={() => setAllPresenceLocal('presente')}
+                      disabled={isChangingDate || alunosTurmaAtual.length === 0}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Marcar todos com presenca
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setAllPresenceLocal('falta')}
+                      disabled={isChangingDate || alunosTurmaAtual.length === 0}
+                      className="attendance-bulk-action disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Marcar todos com falta
+                    </button>
+                  </div>
+>>>>>>> d194492 (test-design)
                 </div>
 
                 <div className="px-6 py-3 bg-white border-b border-slate-200">
@@ -364,6 +395,7 @@ export default function ProfessorDashboard({
                     </div>
                   )}
 
+<<<<<<< HEAD
                   {!isChangingDate && alunosFiltrados.map(aluno => (
                     <div key={aluno.id} className="flex flex-col justify-between gap-4 border-b border-slate-100 p-4 transition-colors hover:bg-slate-50 md:flex-row md:items-center">
                       <div className="flex items-center gap-4">
@@ -371,6 +403,45 @@ export default function ProfessorDashboard({
                         <div>
                           <div className="font-semibold text-slate-800 text-base">{aluno.nome}</div>
                           <div className="text-xs text-slate-500 mt-0.5">{aluno.email}</div>
+=======
+                  {!isChangingDate && alunosFiltrados.map(aluno => {
+                    const hasNote = Boolean(aluno.observacao || aluno.justificativa);
+                    return (
+                    <div key={aluno.id} className="attendance-student-row">
+                      <div className="attendance-student-main">
+                        <div className="attendance-student-identity">
+                          <PersonAvatar person={aluno} size={48} onClick={() => setSelectedPhotoAluno(aluno)} />
+                          <div className="min-w-0">
+                            <div className="attendance-student-name">{aluno.nome}</div>
+                            <div className="attendance-student-email">{aluno.email}</div>
+                          </div>
+                        </div>
+
+                        <div className="attendance-student-actions">
+                          <RadioGroup
+                            value={['presente', 'falta'].includes(aluno.status) ? aluno.status : ''}
+                            onValueChange={(status) => setPresenceLocal(aluno.id, status)}
+                            className="attendance-status-radio"
+                            aria-label={`Status de chamada de ${aluno.nome}`}
+                          >
+                            <label className="attendance-radio-option">
+                              <RadioGroupItem value="presente" />
+                              <span>Presente</span>
+                            </label>
+                            <label className="attendance-radio-option">
+                              <RadioGroupItem value="falta" />
+                              <span>Falta</span>
+                            </label>
+                          </RadioGroup>
+                          <button
+                            type="button"
+                            onClick={() => setNoteEditorId(noteEditorId === aluno.id ? '' : aluno.id)}
+                            className={`attendance-note-button ${hasNote ? 'has-note' : ''}`}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            Observacao
+                          </button>
+>>>>>>> d194492 (test-design)
                         </div>
                       </div>
 
@@ -591,7 +662,7 @@ export default function ProfessorDashboard({
                     <div className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Turmas</div>
                     <div className="mt-3 text-3xl font-semibold text-slate-950">{turmasDoProfessor.length}</div>
                   </div>
-                  <BookOpen className="h-5 w-5 text-red-500" />
+                  <BookOpen className="h-5 w-5 text-zinc-600" />
                 </div>
               </div>
               <div className="metric-card ds-surface p-5">
@@ -609,7 +680,7 @@ export default function ProfessorDashboard({
                     <div className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Presentes</div>
                     <div className="mt-3 text-3xl font-semibold text-slate-950">{presentesProfessor}</div>
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle2 className="h-5 w-5 text-zinc-600" />
                 </div>
               </div>
               <div className="metric-card ds-surface p-5">
@@ -618,7 +689,7 @@ export default function ProfessorDashboard({
                     <div className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Faltas</div>
                     <div className="mt-3 text-3xl font-semibold text-slate-950">{faltasProfessor}</div>
                   </div>
-                  <XCircle className="h-5 w-5 text-red-600" />
+                  <XCircle className="h-5 w-5 text-zinc-600" />
                 </div>
               </div>
               <div className="metric-card ds-surface p-5">
@@ -627,7 +698,7 @@ export default function ProfessorDashboard({
                     <div className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Pendentes</div>
                     <div className="mt-3 text-3xl font-semibold text-slate-950">{pendentesProfessor}</div>
                   </div>
-                  <CalendarDays className="h-5 w-5 text-amber-600" />
+                  <CalendarDays className="h-5 w-5 text-zinc-600" />
                 </div>
               </div>
             </div>
@@ -635,7 +706,7 @@ export default function ProfessorDashboard({
             <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
               <div className="ds-surface p-5">
                 <div className="mb-4 flex items-center gap-2 text-base font-semibold text-slate-950">
-                  <BarChart3 className="h-5 w-5 text-red-600" />
+                  <BarChart3 className="h-5 w-5 text-zinc-600" />
                   Relatórios por turma
                 </div>
                 <div className="space-y-3">
@@ -675,7 +746,7 @@ export default function ProfessorDashboard({
 
               <aside className="ds-surface p-5">
                 <div className="mb-4 flex items-center gap-2 text-base font-semibold text-slate-950">
-                  <CalendarDays className="h-5 w-5 text-red-600" />
+                  <CalendarDays className="h-5 w-5 text-zinc-600" />
                   Chamada atual
                 </div>
                 <div className="space-y-3 text-sm text-slate-600">
