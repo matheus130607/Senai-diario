@@ -115,6 +115,12 @@ export default function App() {
   const effectiveAdminTab = currentRole !== 'tic' && adminTab === 'config' ? 'dashboard' : adminTab;
 
   const currentActiveTab = isAdministrativeRole(currentRole) ? effectiveAdminTab : currentRole === 'professor' ? profTab : empresaTab;
+  const renderWithVLibras = (content) => (
+    <>
+      <VLibrasWidget />
+      {content}
+    </>
+  );
 
   const handleSidebarTabClick = (tabId) => {
     if (isAdministrativeRole(currentRole)) setAdminTab(tabId);
@@ -143,9 +149,7 @@ export default function App() {
 
   // --- TELA DE CARREGAMENTO ---
   if (globalLoading || isDataLoading) {
-    return (
-      <>
-        <VLibrasWidget />
+    return renderWithVLibras(
         <div className="flex min-h-screen items-center justify-center bg-slate-50">
           <div className="flex animate-pulse flex-col items-center">
             <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/SENAI_S%C3%A3o_Paulo_logo.png" alt="SENAI" className="h-16 mb-8 object-contain" />
@@ -157,15 +161,12 @@ export default function App() {
             </div>
           </div>
         </div>
-      </>
     );
   }
 
   // --- TELA DE LOGIN ---
   if (!currentUser) {
-    return (
-      <>
-        <VLibrasWidget />
+    return renderWithVLibras(
         <Login
           data={data}
           setCurrentUser={setCurrentUser}
@@ -181,14 +182,11 @@ export default function App() {
           loginError={loginError}
           setLoginError={setLoginError}
         />
-      </>
     );
   }
 
   // --- TELA PRINCIPAL (DASHBOARD) ---
-  return (
-    <>
-      <VLibrasWidget />
+  return renderWithVLibras(
       <div className="app-shell min-h-screen font-sans text-slate-800">
         {/* Modal Confirm */}
         {confirmModal.isOpen && (
@@ -348,6 +346,5 @@ export default function App() {
         )}
       </main>
     </div>
-    </>
   );
 }

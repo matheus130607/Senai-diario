@@ -1,19 +1,11 @@
 import {
-  Accessibility,
-  CheckCircle2,
   Contrast,
   Eye,
-  Languages,
-  MousePointer2,
-  Moon,
   Palette,
   RotateCcw,
-  Scaling,
-  Sun,
-  Type,
   ZapOff,
 } from 'lucide-react';
-import { Button, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import { Button, SectionHeader } from './ui/DesignSystem';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 
 function ToggleRow({ label, description, checked, onChange, icon: Icon }) {
@@ -53,22 +45,14 @@ function RangeControl({ label, value, min, max, step, onChange, ariaLabel }) {
 export default function AccessibilityPanel({ compact = false }) {
   const { settings, updateAccessibility, resetAccessibility } = useUserSettings();
   const accessibility = settings.accessibility;
-  const librasActive = accessibility.librasEnabled && accessibility.librasProvider === 'vlibras';
-
-  const handleLibrasToggle = (enabled) => {
-    updateAccessibility({
-      librasEnabled: enabled,
-      librasProvider: enabled ? 'vlibras' : 'disabled',
-    });
-  };
 
   return (
     <div className={compact ? 'accessibility-panel-compact' : 'p-6'}>
       {!compact && (
         <SectionHeader
           eyebrow="Acessibilidade"
-          title="Preferências de interface"
-          description="Ajustes persistentes que alteram a experiência real do sistema em todas as telas."
+          title="Preferencias de interface"
+          description="Ajustes persistentes que alteram a experiencia visual do sistema em todas as telas."
           actions={(
             <Button onClick={resetAccessibility}>
               <RotateCcw className="h-4 w-4" />
@@ -78,12 +62,12 @@ export default function AccessibilityPanel({ compact = false }) {
         />
       )}
 
-      <div className="accessibility-layout">
+      <div className="accessibility-layout accessibility-layout-single">
         <section className="accessibility-card">
           <div className="accessibility-card-header">
             <Palette className="h-5 w-5 text-red-600" />
             <div>
-              <h3>Aparência</h3>
+              <h3>Aparencia</h3>
               <p>Tema, cores, leitura e densidade visual.</p>
             </div>
           </div>
@@ -110,9 +94,9 @@ export default function AccessibilityPanel({ compact = false }) {
                 className="ds-input"
               >
                 <option value="senai">SENAI institucional</option>
-                <option value="blue">Azul didático</option>
-                <option value="green">Verde acessível</option>
-                <option value="mono">Monocromático</option>
+                <option value="blue">Azul didatico</option>
+                <option value="green">Verde acessivel</option>
+                <option value="mono">Monocromatico</option>
               </select>
             </label>
 
@@ -137,14 +121,14 @@ export default function AccessibilityPanel({ compact = false }) {
             />
 
             <label>
-              <span className="ds-label">Espaçamento</span>
+              <span className="ds-label">Espacamento</span>
               <select
                 value={accessibility.spacing}
                 onChange={(event) => updateAccessibility({ spacing: event.target.value })}
                 className="ds-input"
               >
                 <option value="compact">Compacto</option>
-                <option value="comfortable">Confortável</option>
+                <option value="comfortable">Confortavel</option>
                 <option value="wide">Amplo</option>
               </select>
             </label>
@@ -154,14 +138,14 @@ export default function AccessibilityPanel({ compact = false }) {
             <ToggleRow
               icon={Contrast}
               label="Alto contraste"
-              description="Reforça textos, bordas, superfícies e estados interativos."
+              description="Reforca textos, bordas, superficies e estados interativos."
               checked={accessibility.highContrast}
               onChange={(value) => updateAccessibility({ highContrast: value })}
             />
             <ToggleRow
               icon={Eye}
-              label="Foco visível reforçado"
-              description="Aumenta o destaque de navegação por teclado em botões, links e campos."
+              label="Foco visivel reforcado"
+              description="Aumenta o destaque de navegacao por teclado em botoes, links e campos."
               checked={accessibility.focusMode}
               onChange={(value) => updateAccessibility({ focusMode: value })}
             />
@@ -172,93 +156,6 @@ export default function AccessibilityPanel({ compact = false }) {
               checked={accessibility.reducedMotion}
               onChange={(value) => updateAccessibility({ reducedMotion: value })}
             />
-          </div>
-        </section>
-
-        <section className="accessibility-card">
-          <div className="accessibility-card-header">
-            <Languages className="h-5 w-5 text-red-600" />
-            <div>
-              <h3>Libras</h3>
-              <p>Integração oficial VLibras para tradução por avatar.</p>
-            </div>
-          </div>
-
-          <div className="accessibility-toggle-list">
-            <ToggleRow
-              icon={Accessibility}
-              label="VLibras ativo"
-              description="Exibe o botão oficial de tradução em Libras no sistema."
-              checked={librasActive}
-              onChange={handleLibrasToggle}
-            />
-          </div>
-
-          <div className="accessibility-form-grid mt-5">
-            <label>
-              <span className="ds-label">Posição do botão</span>
-              <select
-                value={accessibility.librasPosition}
-                onChange={(event) => updateAccessibility({ librasPosition: event.target.value })}
-                className="ds-input"
-                disabled={!librasActive}
-              >
-                <option value="right">Direita</option>
-                <option value="left">Esquerda</option>
-                <option value="top-right">Topo direito</option>
-                <option value="top-left">Topo esquerdo</option>
-                <option value="bottom-right">Base direita</option>
-                <option value="bottom-left">Base esquerda</option>
-                <option value="custom">Personalizada</option>
-              </select>
-            </label>
-
-            <label>
-              <span className="ds-label">Avatar</span>
-              <select
-                value={accessibility.librasAvatar}
-                onChange={(event) => updateAccessibility({ librasAvatar: event.target.value })}
-                className="ds-input"
-                disabled={!librasActive}
-              >
-                <option value="icaro">Ícaro</option>
-                <option value="hosana">Hosana</option>
-                <option value="guga">Guga</option>
-                <option value="random">Aleatório</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              onClick={() => updateAccessibility({ librasPosition: 'right', librasCustomPosition: null })}
-              disabled={!librasActive || !accessibility.librasCustomPosition}
-            >
-              <MousePointer2 className="h-4 w-4" />
-              Reposicionar VLibras
-            </Button>
-          </div>
-
-          <div className="accessibility-status-panel">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-slate-950">Estado atual</span>
-              <StatusBadge tone={librasActive ? 'success' : 'warning'}>
-                {librasActive ? 'VLibras ativo' : 'VLibras desativado'}
-              </StatusBadge>
-            </div>
-            <div className="accessibility-preview">
-              <div>
-                <strong>Preferências aplicadas</strong>
-                <small>Fonte, escala, espaçamento, contraste, foco e Libras são salvos por usuário.</small>
-              </div>
-              <div className="flex gap-2">
-                {accessibility.theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                <Type className="h-4 w-4" />
-                <Scaling className="h-4 w-4" />
-                {librasActive && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-              </div>
-            </div>
           </div>
         </section>
       </div>
