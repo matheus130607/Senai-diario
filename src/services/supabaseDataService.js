@@ -202,8 +202,10 @@ const sanitizeAdministrador = (admin) => {
   };
 };
 
-const mapAlunoFromDb = (aluno, statusByAlunoId) => {
+const mapAlunoFromDb = (aluno, presencaByAlunoId) => {
   const alunoId = idToString(aluno.id);
+  const selectedPresenca = presencaByAlunoId.get(alunoId);
+  const selectedStatus = typeof selectedPresenca === 'string' ? selectedPresenca : selectedPresenca?.status;
 
   return {
     id: alunoId,
@@ -213,7 +215,9 @@ const mapAlunoFromDb = (aluno, statusByAlunoId) => {
     email: firstTextValue(aluno.email, aluno.email_institucional),
     turmaId: idToString(aluno.turma_id ?? aluno.turmaId),
     empresaId: idToString(aluno.empresa_id ?? aluno.empresaId),
-    status: statusByAlunoId.get(alunoId) || normalizeStatus(aluno.status),
+    status: selectedStatus || normalizeStatus(aluno.status),
+    observacao: textValue(selectedPresenca?.observacao),
+    justificativa: textValue(selectedPresenca?.justificativa),
   };
 };
 
@@ -394,8 +398,8 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
 
   const presencas = presencasResult.rows;
   const selectedDatePresencas = presencas.filter((presenca) => presenca.data === attendanceDate);
-  const statusByAlunoId = new Map(
-    selectedDatePresencas.map((presenca) => [presenca.alunoId, presenca.status]),
+  const presencaByAlunoId = new Map(
+    selectedDatePresencas.map((presenca) => [presenca.alunoId, presenca]),
   );
 
   const turmasByProfessorId = (professoresTurmasResult.data || []).reduce((acc, relation) => {
@@ -413,7 +417,7 @@ export const loadSupabaseData = async (attendanceDate = getTodayAttendanceDate()
       mapProfessorFromDb(professor, turmasByProfessorId[idToString(professor.id)] || [])
     )),
     empresas: (empresasResult.data || []).map(mapEmpresaFromDb),
-    alunos: (alunosResult.data || []).map((aluno) => mapAlunoFromDb(aluno, statusByAlunoId)),
+    alunos: (alunosResult.data || []).map((aluno) => mapAlunoFromDb(aluno, presencaByAlunoId)),
     administradores: (administradoresResult.data || []).map(mapAdministradorFromDb),
     presencas,
     config: {

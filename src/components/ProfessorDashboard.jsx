@@ -12,14 +12,17 @@ import {
   FileSpreadsheet,
   FileText,
   Loader2,
+  MessageSquare,
   Send,
   Users,
 } from 'lucide-react';
 import DashboardView from './DashboardView';
 import SearchableSelect from './ui/SearchableSelect';
-import { AvatarInitial, Button, EmptyState, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import DatePicker from './ui/DatePicker';
+import PersonAvatar from './ui/PersonAvatar';
+import StudentPhotoModal from './ui/StudentPhotoModal';
+import { Button, EmptyState, SectionHeader, StatusBadge } from './ui/DesignSystem';
 import AcademicCalendar from './AcademicCalendar';
-import AccessibilityPanel from './AccessibilityPanel';
 import UserProfile from './UserProfile';
 import { exportExcelCSV, exportPDFReport } from '../utils/utils';
 
@@ -76,6 +79,8 @@ export default function ProfessorDashboard({
   const [isSending, setIsSending] = useState(false);
   const [isChangingDate, setIsChangingDate] = useState(false);
   const [dateError, setDateError] = useState('');
+  const [selectedPhotoAluno, setSelectedPhotoAluno] = useState(null);
+  const [noteEditorId, setNoteEditorId] = useState('');
   const currentUserTurmas = useMemo(() => (
     Array.isArray(currentUser.turmas) ? currentUser.turmas : []
   ), [currentUser.turmas]);
@@ -187,6 +192,25 @@ export default function ProfessorDashboard({
     }));
   };
 
+  const setAllPresenceLocal = (status) => {
+    const turmaAlunoIds = new Set(alunosTurmaAtual.map((aluno) => aluno.id));
+    setData(prev => ({
+      ...prev,
+      alunos: prev.alunos.map(aluno => (
+        turmaAlunoIds.has(aluno.id) ? { ...aluno, status } : aluno
+      )),
+    }));
+  };
+
+  const updateStudentNote = (alunoId, field, value) => {
+    setData(prev => ({
+      ...prev,
+      alunos: prev.alunos.map(aluno => (
+        aluno.id === alunoId ? { ...aluno, [field]: value } : aluno
+      )),
+    }));
+  };
+
   const executarEnvioSupabase = async (alunosParaEnviar) => {
     setIsSending(true);
     try {
@@ -251,10 +275,6 @@ export default function ProfessorDashboard({
           <AcademicCalendar data={data} currentUser={currentUser} />
         )}
 
-        {profTab === 'acessibilidade' && (
-          <AccessibilityPanel />
-        )}
-
         {profTab === 'perfil' && (
           <UserProfile currentUser={currentUser} showToast={showToast} />
         )}
@@ -288,14 +308,13 @@ export default function ProfessorDashboard({
 
                     <div className="min-w-0">
                       <label className="ds-label">Data da chamada</label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={selectedAttendanceDate}
                         min={semesterBounds.min}
                         max={semesterBounds.max}
                         onChange={handleAttendanceDateChange}
                         disabled={isChangingDate}
-                        className="date-input ds-input"
+                        className="date-input"
                       />
                     </div>
 
@@ -329,6 +348,26 @@ export default function ProfessorDashboard({
                         className="ds-input ds-input-icon-left w-full"
                       />
                     </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="success"
+                      onClick={() => setAllPresenceLocal('presente')}
+                      disabled={isChangingDate || alunosTurmaAtual.length === 0}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Marcar todos com presenca
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setAllPresenceLocal('falta')}
+                      disabled={isChangingDate || alunosTurmaAtual.length === 0}
+                      className="attendance-bulk-danger disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Marcar todos com falta
+                    </button>
                   </div>
                 </div>
 
@@ -364,32 +403,72 @@ export default function ProfessorDashboard({
                     </div>
                   )}
 
-                  {!isChangingDate && alunosFiltrados.map(aluno => (
-                    <div key={aluno.id} className="flex flex-col justify-between gap-4 border-b border-slate-100 p-4 transition-colors hover:bg-slate-50 md:flex-row md:items-center">
-                      <div className="flex items-center gap-4">
-                        <AvatarInitial name={aluno.nome} tone={aluno.status === 'presente' ? 'emerald' : aluno.status === 'falta' ? 'red' : 'slate'} className="h-11 w-11" />
-                        <div>
-                          <div className="font-semibold text-slate-800 text-base">{aluno.nome}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">{aluno.email}</div>
+                  {!isChangingDate && alunosFiltrados.map(aluno => {
+                    const hasNote = Boolean(aluno.observacao || aluno.justificativa);
+                    return (
+                    <div key={aluno.id} className="attendance-student-row">
+                      <div className="attendance-student-main">
+                        <div className="attendance-student-identity">
+                          <PersonAvatar person={aluno} size={48} onClick={() => setSelectedPhotoAluno(aluno)} />
+                          <div className="min-w-0">
+                            <div className="attendance-student-name">{aluno.nome}</div>
+                            <div className="attendance-student-email">{aluno.email}</div>
+                          </div>
+                        </div>
+
+                        <div className="attendance-student-actions">
+                          <div className="attendance-status-actions">
+                            <button
+                              type="button"
+                              onClick={() => setPresenceLocal(aluno.id, 'presente')}
+                              className={`attendance-status-button is-present ${aluno.status === 'presente' ? 'is-active' : ''}`}
+                            >
+                              <CheckCircle2 className="w-4 h-4" /> Presente
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPresenceLocal(aluno.id, 'falta')}
+                              className={`attendance-status-button is-absent ${aluno.status === 'falta' ? 'is-active' : ''}`}
+                            >
+                              <XCircle className="w-4 h-4" /> Falta
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNoteEditorId(noteEditorId === aluno.id ? '' : aluno.id)}
+                            className={`attendance-note-button ${hasNote ? 'has-note' : ''}`}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            Observacao
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex gap-2 self-end md:self-auto">
-                        <button
-                          onClick={() => setPresenceLocal(aluno.id, 'presente')}
-                          className={`ds-button ${aluno.status === 'presente' ? 'border-emerald-600 bg-emerald-600 text-white shadow-sm' : 'ds-button-neutral hover:text-emerald-700'}`}
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Presente
-                        </button>
-                        <button
-                          onClick={() => setPresenceLocal(aluno.id, 'falta')}
-                          className={`ds-button ${aluno.status === 'falta' ? 'border-red-600 bg-red-600 text-white shadow-sm' : 'ds-button-neutral hover:text-red-700'}`}
-                        >
-                          <XCircle className="w-4 h-4" /> Falta
-                        </button>
-                      </div>
+                      {noteEditorId === aluno.id && (
+                        <div className="student-note-panel">
+                          <label>
+                            <span className="ds-label">Observacao</span>
+                            <textarea
+                              value={aluno.observacao || ''}
+                              onChange={(event) => updateStudentNote(aluno.id, 'observacao', event.target.value)}
+                              className="ds-input min-h-[5rem]"
+                              placeholder="Ex: comportamento, observacao medica ou detalhe da chamada."
+                            />
+                          </label>
+                          <label>
+                            <span className="ds-label">Justificativa</span>
+                            <textarea
+                              value={aluno.justificativa || ''}
+                              onChange={(event) => updateStudentNote(aluno.id, 'justificativa', event.target.value)}
+                              className="ds-input min-h-[5rem]"
+                              placeholder="Ex: justificativa de falta apresentada pelo aluno."
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
 
                   {!isChangingDate && alunosTurmaAtual.length === 0 && (
                     <div className="p-8">
@@ -525,7 +604,7 @@ export default function ProfessorDashboard({
                   return (
                     <article key={aluno.id} className="ds-list-item flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex min-w-0 items-center gap-4">
-                        <AvatarInitial name={aluno.nome} tone={aluno.status === 'presente' ? 'emerald' : aluno.status === 'falta' ? 'red' : 'amber'} className="h-11 w-11" />
+                        <PersonAvatar person={aluno} size={44} />
                         <div className="min-w-0">
                           <h3 className="truncate text-base font-semibold text-slate-900">{aluno.nome}</h3>
                           <p className="truncate text-sm text-slate-500">{aluno.email}</p>
@@ -698,6 +777,7 @@ export default function ProfessorDashboard({
           </div>
         )}
       </div>
+      <StudentPhotoModal aluno={selectedPhotoAluno} onClose={() => setSelectedPhotoAluno(null)} />
     </DashboardShell>
   );
 }

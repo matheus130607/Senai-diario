@@ -4,9 +4,10 @@ import DashboardShell from './DashboardShell';
 import { AlertTriangle, BookOpen, Edit, Trash2, CheckSquare, Square, FileSpreadsheet, FileText, Database, RefreshCw } from 'lucide-react';
 import DashboardView from './DashboardView';
 import SearchableSelect from './ui/SearchableSelect';
+import DatePicker from './ui/DatePicker';
 import { AvatarInitial, Button, IconButton, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import PersonAvatar from './ui/PersonAvatar';
 import AcademicCalendar from './AcademicCalendar';
-import AccessibilityPanel from './AccessibilityPanel';
 import AutomationCenter from './AutomationCenter';
 import TicAdminTools from './TicAdminTools';
 import UserProfile from './UserProfile';
@@ -170,13 +171,12 @@ export default function AdminDashboard({
             </div>
             <label className="min-w-[13rem]">
               <span className="ds-label">Data de visualização</span>
-              <input
-                type="date"
+              <DatePicker
                 value={selectedAttendanceDate || todayInputValue}
                 max={todayInputValue}
                 onChange={handleAttendanceDateChange}
                 disabled={isChangingDate}
-                className="date-input ds-input"
+                className="date-input"
               />
             </label>
           </div>
@@ -347,10 +347,6 @@ export default function AdminDashboard({
           <AutomationCenter data={data} showToast={showToast} />
         )}
 
-        {adminTab === 'acessibilidade' && (
-          <AccessibilityPanel />
-        )}
-
         {adminTab === 'perfil' && (
           <UserProfile currentUser={currentUser} showToast={showToast} />
         )}
@@ -490,7 +486,7 @@ export default function AdminDashboard({
               {data.professores.map(prof => (
                 <div key={prof.id} className="ds-list-item flex items-center justify-between gap-4 p-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <AvatarInitial name={prof.nome} tone="red" />
+                    <PersonAvatar person={prof} size={44} />
                     <div className="min-w-0">
                       <div className="truncate font-bold text-slate-900">{prof.nome}</div>
                       <div className="mt-1 text-xs text-slate-500">E-mail: {prof.email} | Turmas: {prof.turmas.length}</div>
@@ -628,7 +624,12 @@ export default function AdminDashboard({
                 <tbody>
                   {data.alunos.map(aluno => (
                     <tr key={aluno.id}>
-                      <td className="px-4 py-3 font-bold text-slate-900">{aluno.nome}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <PersonAvatar person={aluno} size={36} />
+                          <span className="truncate font-bold text-slate-900">{aluno.nome}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-slate-500">{aluno.email}</td>
                       <td className="px-4 py-3 text-slate-500 space-y-1">
                         <span className="ds-badge">{data.turmas.find(t=>t.id===aluno.turmaId)?.nome || 'Sem Turma'}</span>

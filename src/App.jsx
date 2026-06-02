@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import {
-  Accessibility,
   Building,
   CheckCircle2,
   Loader2,
@@ -253,14 +252,6 @@ export default function App() {
                     >
                       <UserRound className="h-4 w-4" />
                       Perfil
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAccountMenuTabClick('acessibilidade')}
-                      className={`account-menu-item ${currentActiveTab === 'acessibilidade' ? 'is-active' : ''}`}
-                    >
-                      <Accessibility className="h-4 w-4" />
-                      Acessibilidade
                     </button>
                   </div>
                 )}

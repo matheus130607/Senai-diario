@@ -606,7 +606,7 @@ export default function Login({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-full shadow-lg shadow-red-200 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-full transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <span className="flex items-center justify-center gap-2">

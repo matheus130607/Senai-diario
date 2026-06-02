@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
-  CheckCircle2,
   Clock3,
   Edit,
   Mail,
@@ -15,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button, EmptyState, IconButton, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import EmailComposeWindow from './ui/EmailComposeWindow';
 import {
   buildWeeklyReportMetrics,
   createAutomationLog,
@@ -35,6 +35,8 @@ const emptyAutomation = {
   recipients: 'Empresas com aprendizes ativos',
   template: 'weekly-company-summary',
   subject: '',
+  bodyHtml: '<p></p>',
+  attachments: [],
   retryLimit: 3,
   queue: 'attendance-email-reports',
   nextRunLabel: 'Segunda-feira, 05:00',
@@ -69,12 +71,28 @@ const formatLogDate = (value) => {
   });
 };
 
+const createEmptyForm = () => ({
+  ...emptyAutomation,
+  id: '',
+  name: '',
+  subject: '',
+  description: '',
+  bodyHtml: '<p></p>',
+  attachments: [],
+});
+
 export default function AutomationCenter({ data, showToast }) {
   const initialState = useMemo(() => readAutomationState(), []);
   const [automations, setAutomations] = useState(initialState.automations);
   const [history, setHistory] = useState(initialState.history);
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState({ ...emptyAutomation, ...DEFAULT_EMAIL_AUTOMATIONS[0], id: '' });
+  const [composeState, setComposeState] = useState({
+    isOpen: false,
+    mode: 'create',
+    isMinimized: false,
+    isMaximized: false,
+  });
 
   const metrics = useMemo(() => buildWeeklyReportMetrics(data), [data]);
   const activeAutomations = automations.filter((automation) => automation.status === 'active').length;
@@ -104,7 +122,22 @@ export default function AutomationCenter({ data, showToast }) {
 
   const resetForm = () => {
     setEditingId('');
-    setForm({ ...emptyAutomation, id: '', name: '', subject: '', description: '' });
+    setForm(createEmptyForm());
+  };
+
+  const openCreateCompose = () => {
+    resetForm();
+    setComposeState({
+      isOpen: true,
+      mode: 'create',
+      isMinimized: false,
+      isMaximized: false,
+    });
+  };
+
+  const closeCompose = () => {
+    resetForm();
+    setComposeState((prev) => ({ ...prev, isOpen: false, isMinimized: false, isMaximized: false }));
   };
 
   const handleSubmit = (event) => {
@@ -112,6 +145,8 @@ export default function AutomationCenter({ data, showToast }) {
     const payload = {
       ...form,
       id: editingId || `automation-${Date.now()}`,
+      bodyHtml: form.bodyHtml || `<p>${form.description || ''}</p>`,
+      attachments: Array.isArray(form.attachments) ? form.attachments : [],
       retryLimit: Number(form.retryLimit) || 3,
     };
 
@@ -121,12 +156,22 @@ export default function AutomationCenter({ data, showToast }) {
         : [payload, ...prev]
     ));
     showToast?.(editingId ? 'Comunicado atualizado.' : 'Comunicado criado.');
-    resetForm();
+    closeCompose();
   };
 
   const editAutomation = (automation) => {
     setEditingId(automation.id);
-    setForm(automation);
+    setForm({
+      ...automation,
+      bodyHtml: automation.bodyHtml || `<p>${automation.description || ''}</p>`,
+      attachments: Array.isArray(automation.attachments) ? automation.attachments : [],
+    });
+    setComposeState({
+      isOpen: true,
+      mode: 'edit',
+      isMinimized: false,
+      isMaximized: false,
+    });
   };
 
   const toggleAutomation = (automation) => {
@@ -151,18 +196,18 @@ export default function AutomationCenter({ data, showToast }) {
       status,
       status === 'retry'
         ? 'Reenvio solicitado pelo painel administrativo.'
-        : 'Mensagem adicionada à fila com tolerância a falhas e retry automático.',
+        : 'Mensagem adicionada a fila com tolerancia a falhas e retry automatico.',
     );
     setHistory((prev) => [log, ...prev].slice(0, 20));
-    showToast?.('Envio adicionado à fila.');
+    showToast?.('Envio adicionado a fila.');
   };
 
   return (
     <div className="p-6">
       <SectionHeader
-        eyebrow="Comunicados automáticos"
-        title="Relatórios e alertas por e-mail"
-        description="Painel para relatórios semanais, templates, filas, logs, reenvio e histórico de comunicação com empresas."
+        eyebrow="Comunicados automaticos"
+        title="Relatorios e alertas por e-mail"
+        description="Painel para relatorios semanais, templates, filas, logs, reenvio e historico de comunicacao com empresas."
       />
 
       <div className="automation-metrics-grid">
@@ -173,7 +218,7 @@ export default function AutomationCenter({ data, showToast }) {
         </div>
         <div className="automation-kpi">
           <Activity className="h-5 w-5 text-emerald-600" />
-          <span>Frequência semanal</span>
+          <span>Frequencia semanal</span>
           <strong>{metrics.frequencia}%</strong>
         </div>
         <div className="automation-kpi">
@@ -188,20 +233,26 @@ export default function AutomationCenter({ data, showToast }) {
         </div>
       </div>
 
-      <div className="automation-layout">
+      <div className="automation-layout automation-layout-single">
         <section className="automation-panel">
-          <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="mb-5 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
             <div>
               <h3 className="text-base font-semibold text-slate-950">Comunicados programados</h3>
-              <p className="mt-1 text-sm text-slate-500">Relatório principal: toda segunda-feira às 05:00.</p>
+              <p className="mt-1 text-sm text-slate-500">Relatorio principal: toda segunda-feira as 05:00.</p>
             </div>
-            <StatusBadge tone="success" icon={ServerCog}>
-              Fila preparada
-            </StatusBadge>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge tone="success" icon={ServerCog}>
+                Fila preparada
+              </StatusBadge>
+              <Button type="button" variant="primary" onClick={openCreateCompose}>
+                <Plus className="h-4 w-4" />
+                Criar novo comunicado
+              </Button>
+            </div>
           </div>
 
           {automations.length === 0 ? (
-            <EmptyState icon={Mail} title="Nenhum comunicado criado" description="Crie relatórios automáticos para empresas, coordenação ou secretaria." />
+            <EmptyState icon={Mail} title="Nenhum comunicado criado" description="Crie relatorios automaticos para empresas, coordenacao ou secretaria." />
           ) : (
             <div className="space-y-3">
               {automations.map((automation) => (
@@ -216,9 +267,10 @@ export default function AutomationCenter({ data, showToast }) {
                     <p className="mt-2 text-sm leading-6 text-slate-600">{automation.description}</p>
                     <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
                       <span>Periodicidade: {PERIODICITY_OPTIONS.find((item) => item.value === automation.periodicity)?.label}</span>
-                      <span>Destinatários: {automation.recipients}</span>
+                      <span>Destinatarios: {automation.recipients}</span>
                       <span>Template: {TEMPLATE_OPTIONS.find((item) => item.value === automation.template)?.label}</span>
                       <span>Retry: {automation.retryLimit} tentativa(s)</span>
+                      <span>Anexos: {automation.attachments?.length || 0}</span>
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
@@ -240,66 +292,16 @@ export default function AutomationCenter({ data, showToast }) {
             </div>
           )}
         </section>
-
-        <aside className="automation-panel">
-          <div className="mb-5 flex items-center gap-2">
-            <Plus className="h-5 w-5 text-red-600" />
-            <h3 className="text-base font-semibold text-slate-950">{editingId ? 'Editar comunicado' : 'Novo comunicado'}</h3>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label>
-              <span className="ds-label">Nome</span>
-              <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="ds-input" required />
-            </label>
-            <label>
-              <span className="ds-label">Assunto</span>
-              <input value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} className="ds-input" required />
-            </label>
-            <label>
-              <span className="ds-label">Descrição</span>
-              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="ds-input min-h-[6rem]" required />
-            </label>
-            <label>
-              <span className="ds-label">Periodicidade</span>
-              <select value={form.periodicity} onChange={(event) => setForm({ ...form, periodicity: event.target.value })} className="ds-input">
-                {PERIODICITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label>
-              <span className="ds-label">Destinatários</span>
-              <input value={form.recipients} onChange={(event) => setForm({ ...form, recipients: event.target.value })} className="ds-input" />
-            </label>
-            <label>
-              <span className="ds-label">Template</span>
-              <select value={form.template} onChange={(event) => setForm({ ...form, template: event.target.value })} className="ds-input">
-                {TEMPLATE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label>
-              <span className="ds-label">Retry automático</span>
-              <input type="number" min="1" max="10" value={form.retryLimit} onChange={(event) => setForm({ ...form, retryLimit: event.target.value })} className="ds-input" />
-            </label>
-
-            <div className="flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-              <Button type="submit" variant="primary">
-                <CheckCircle2 className="h-4 w-4" />
-                {editingId ? 'Salvar' : 'Criar'}
-              </Button>
-              {editingId && <Button type="button" onClick={resetForm}>Cancelar</Button>}
-            </div>
-          </form>
-        </aside>
       </div>
 
       <section className="automation-panel mt-5">
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-semibold text-slate-950">Histórico de envios e logs</h3>
+            <h3 className="text-base font-semibold text-slate-950">Historico de envios e logs</h3>
             <p className="mt-1 text-sm text-slate-500">Registros preparados para auditoria, reenviar mensagens e investigar falhas.</p>
           </div>
           <StatusBadge tone="warning" icon={RefreshCw}>
-            Retry automático ativo
+            Retry automatico ativo
           </StatusBadge>
         </div>
 
@@ -309,10 +311,10 @@ export default function AutomationCenter({ data, showToast }) {
               <tr>
                 <th>Comunicado</th>
                 <th>Status</th>
-                <th>Destinatários</th>
-                <th>Início</th>
+                <th>Destinatarios</th>
+                <th>Inicio</th>
                 <th>Tentativas</th>
-                <th>Ações</th>
+                <th>Acoes</th>
               </tr>
             </thead>
             <tbody>
@@ -341,6 +343,21 @@ export default function AutomationCenter({ data, showToast }) {
           </table>
         </div>
       </section>
+
+      {composeState.isOpen && (
+        <EmailComposeWindow
+          mode={composeState.mode}
+          form={form}
+          isMinimized={composeState.isMinimized}
+          isMaximized={composeState.isMaximized}
+          uploadContextId={editingId || form.id || form.name || 'draft'}
+          onChangeForm={setForm}
+          onSubmit={handleSubmit}
+          onClose={closeCompose}
+          onMinimize={() => setComposeState((prev) => ({ ...prev, isMinimized: !prev.isMinimized }))}
+          onMaximize={() => setComposeState((prev) => ({ ...prev, isMaximized: !prev.isMaximized, isMinimized: false }))}
+        />
+      )}
     </div>
   );
 }

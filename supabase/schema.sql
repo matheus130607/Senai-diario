@@ -138,6 +138,8 @@ create table if not exists public.email_automations (
   recipients text not null,
   template text not null,
   subject text not null,
+  body_html text,
+  attachments jsonb not null default '[]'::jsonb,
   retry_limit integer not null default 3,
   queue text not null default 'attendance-email-reports',
   next_run_at timestamptz,
@@ -181,6 +183,8 @@ create table if not exists public.audit_logs (
 );
 
 alter table public.email_automations add column if not exists client_id text unique;
+alter table public.email_automations add column if not exists body_html text;
+alter table public.email_automations add column if not exists attachments jsonb not null default '[]'::jsonb;
 alter table public.email_automation_logs add column if not exists client_id text unique;
 create unique index if not exists idx_email_automations_client_id on public.email_automations (client_id) where client_id is not null;
 create unique index if not exists idx_email_automation_logs_client_id on public.email_automation_logs (client_id) where client_id is not null;

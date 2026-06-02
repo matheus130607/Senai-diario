@@ -10,9 +10,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import DashboardView from './DashboardView';
-import { AvatarInitial, Button, EmptyState, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import DatePicker from './ui/DatePicker';
+import { Button, EmptyState, SectionHeader, StatusBadge } from './ui/DesignSystem';
+import PersonAvatar from './ui/PersonAvatar';
 import AcademicCalendar from './AcademicCalendar';
-import AccessibilityPanel from './AccessibilityPanel';
 import AttendanceHistory from './AttendanceHistory';
 import UserProfile from './UserProfile';
 import { exportExcelCSV, exportPDFReport } from '../utils/utils';
@@ -275,13 +276,12 @@ export default function EmpresaDashboard({
             <div className="toolbar-grid">
               <label>
                 <span className="ds-label">Data de visualizacao</span>
-                <input
-                  type="date"
+                <DatePicker
                   value={selectedAttendanceDate}
                   max={today}
                   onChange={handleAttendanceDateChange}
                   disabled={isChangingDate}
-                  className="date-input ds-input"
+                  className="date-input"
                 />
               </label>
               <label>
@@ -340,10 +340,6 @@ export default function EmpresaDashboard({
           <AcademicCalendar data={data} currentUser={currentUser} />
         )}
 
-        {empresaTab === 'acessibilidade' && (
-          <AccessibilityPanel />
-        )}
-
         {empresaTab === 'perfil' && (
           <UserProfile currentUser={currentUser} showToast={showToast} />
         )}
@@ -363,7 +359,7 @@ export default function EmpresaDashboard({
                 {alunosEmpresa.map(aluno => (
                   <div key={aluno.id} className="flex flex-col justify-between gap-4 border-b border-slate-100 p-4 transition-colors last:border-b-0 hover:bg-slate-50 md:flex-row md:items-center">
                     <div className="flex items-center gap-4">
-                      <AvatarInitial name={aluno.nome} tone="amber" />
+                      <PersonAvatar person={aluno} size={44} />
                       <div>
                         <div className="font-bold text-slate-900">{aluno.nome}</div>
                         <div className="text-xs text-slate-500 mt-0.5"><span className="font-medium">{data.turmas.find(t=>t.id===aluno.turmaId)?.nome || 'Sem Turma'}</span> - {aluno.email}</div>

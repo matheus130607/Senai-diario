@@ -222,7 +222,6 @@ export default function AcademicCalendar({ data, currentUser }) {
                 aria-label={`Ver registros de ${formatDateKey(dateKey)}`}
               >
                 <span className="calendar-day-number">{day.getDate()}</span>
-                <span className="mt-2 text-xs font-medium text-slate-500">{dayEvents.length ? `${dayEvents.length} registro(s)` : 'Sem chamada'}</span>
                 <EventPills events={dayEvents} />
               </button>
             );
