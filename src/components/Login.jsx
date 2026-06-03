@@ -52,14 +52,24 @@ const FALLBACK_TEST_CREDENTIALS = [
   },
 ];
 
+const FALLBACK_TIC_CREDENTIAL = {
+  id: 'fallback-tic',
+  role: 'tic',
+  step: 'tic_auth',
+  title: 'TIC Super Admin',
+  subtitle: 'TIC',
+  email: 'tic@senaisp.edu.br',
+  secret: 'senha_teste_123',
+  secretLabel: 'Senha',
+};
+
 export default function Login({
   currentUser, setCurrentUser, setGlobalLoading, data,
   loginStep, setLoginStep, adminPassword, setAdminPassword,
   profEmail, setProfEmail, profSenha, setProfSenha, loginError, setLoginError
 }) {
-  const ticAccessToken = String(import.meta.env.VITE_TIC_ACCESS_TOKEN || '').trim();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [ticToken, setTicToken] = useState('');
+  const [ticPassword, setTicPassword] = useState('');
   const [isCredentialPanelOpen, setIsCredentialPanelOpen] = useState(false);
   const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
   const normalizePassword = (value) => String(value || '').trim();
@@ -109,21 +119,12 @@ export default function Login({
     ] : [];
 
     const fallbackCredentials = isSupabaseConfigured && showTestCredentialPanel ? [...FALLBACK_TEST_CREDENTIALS] : [];
-    if (isTicRoute && ticAccessToken) {
-      fallbackCredentials.push({
-        id: 'tic-token',
-        role: 'tic',
-        step: 'tic_auth',
-        title: 'TIC Super Admin',
-        subtitle: 'TIC',
-        email: 'tic@senaisp.edu.br',
-        secret: ticAccessToken,
-        secretLabel: 'Token',
-      });
+    if (isTicRoute) {
+      fallbackCredentials.push(FALLBACK_TIC_CREDENTIAL);
     }
 
     return showTestCredentialPanel && remoteCredentials.length > 0 ? remoteCredentials : fallbackCredentials;
-  }, [data, isTicRoute, ticAccessToken]);
+  }, [data, isTicRoute]);
   const shouldShowCredentialPanel = showTestCredentialPanel && supabaseCredentials.length > 0;
 
   const appendTicLog = (event, email) => {
@@ -172,7 +173,7 @@ export default function Login({
     setProfEmail('');
     setProfSenha('');
     setAdminPassword('');
-    setTicToken('');
+    setTicPassword('');
   };
 
   const fillDemoCredential = (credential) => {
@@ -183,12 +184,12 @@ export default function Login({
     if (credential.step === 'admin_auth' || credential.step === 'secretaria_auth') {
       setAdminPassword(credential.secret);
       setProfSenha('');
-      setTicToken('');
+      setTicPassword('');
       return;
     }
 
     if (credential.step === 'tic_auth') {
-      setTicToken(credential.secret);
+      setTicPassword(credential.secret);
       setAdminPassword('');
       setProfSenha('');
       return;
@@ -196,7 +197,7 @@ export default function Login({
 
     setProfSenha(credential.secret);
     setAdminPassword('');
-    setTicToken('');
+    setTicPassword('');
   };
 
   const handleDatabaseLogin = async ({ role, email, password }) => {
@@ -214,8 +215,11 @@ export default function Login({
       setProfEmail('');
       setProfSenha('');
       setAdminPassword('');
+      setTicPassword('');
+      return user;
     } catch (error) {
       setLoginError(error.message || 'Não foi possível autenticar no Supabase.');
+      return null;
     } finally {
       setGlobalLoading(false);
       setIsSubmitting(false);
@@ -243,7 +247,7 @@ export default function Login({
   const handleTicLogin = async (e) => {
     e.preventDefault();
     const email = normalizeEmail(profEmail);
-    const token = normalizePassword(ticToken);
+    const password = normalizePassword(ticPassword);
 
     if (!isTicRoute) {
       setLoginError('A rota técnica não está habilitada.');
@@ -251,44 +255,14 @@ export default function Login({
       return;
     }
 
-    if (!ticAccessToken) {
-      setLoginError('Token TIC não configurado no ambiente.');
-      appendTicLog('tic_token_missing', email);
-      return;
-    }
+    appendTicLog('tic_login_attempt', email);
+    const user = await handleDatabaseLogin({
+      role: 'tic',
+      email,
+      password,
+    });
 
-    if (token !== ticAccessToken) {
-      setLoginError('Token técnico inválido.');
-      appendTicLog('tic_token_denied', email);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setGlobalLoading(true);
-    appendTicLog('tic_login_allowed', email);
-
-    if (isSupabaseConfigured) {
-      await handleDatabaseLogin({
-        role: 'tic',
-        email: email || 'tic@senaisp.edu.br',
-        password: token,
-      });
-      return;
-    }
-
-    setTimeout(() => {
-      setCurrentUser({
-        role: 'tic',
-        id: 'tic-super-admin',
-        nome: 'TIC Super Admin',
-        email: email || 'tic@senaisp.edu.br',
-      });
-      setLoginError('');
-      setProfEmail('');
-      setTicToken('');
-      setGlobalLoading(false);
-      setIsSubmitting(false);
-    }, 800);
+    appendTicLog(user ? 'tic_login_success' : 'tic_login_denied', email);
   };
 
   const handleProfLogin = async (e) => {
@@ -495,7 +469,7 @@ export default function Login({
                         setLoginStep('tic_auth');
                         setLoginError('');
                         setProfEmail('');
-                        setTicToken('');
+                        setTicPassword('');
                         setAdminPassword('');
                         setProfSenha('');
                       }}
@@ -507,7 +481,7 @@ export default function Login({
                         </div>
                         <div className="text-left">
                           <h3 className="font-semibold">Login TIC</h3>
-                          <p className="text-xs text-white/70">Área técnica protegida por token</p>
+                          <p className="text-xs text-white/70">Área técnica validada pelo Supabase</p>
                         </div>
                       </div>
                       <KeyRound size={20} className="text-white/70 group-hover:translate-x-1 transition-all" />
@@ -545,7 +519,7 @@ export default function Login({
                   <p className="text-sm text-gray-500 mb-6">
                     {loginStep === 'admin_auth' && 'Entre com uma conta de Coordenação.'}
                     {loginStep === 'secretaria_auth' && 'Entre com uma conta da Secretaria acadêmica.'}
-                    {loginStep === 'tic_auth' && `Acesso oculto para ${getRoleLabel('tic')} com token técnico.`}
+                    {loginStep === 'tic_auth' && `Entre com a conta ${getRoleLabel('tic')} cadastrada no Supabase.`}
                     {loginStep === 'prof_auth' && 'Bem-vindo de volta, Professor!'}
                     {loginStep === 'empresa_auth' && 'Área exclusiva para empresas parceiras.'}
                   </p>
@@ -578,7 +552,7 @@ export default function Login({
 
                   <div className="mb-6">
                     <label htmlFor="login-password" className="block text-xs font-semibold uppercase text-gray-500 mb-1">
-                      {loginStep === 'admin_auth' || loginStep === 'secretaria_auth' ? 'Senha administrativa' : loginStep === 'tic_auth' ? 'Token especial TIC' : 'Senha'}
+                      {loginStep === 'admin_auth' || loginStep === 'secretaria_auth' ? 'Senha administrativa' : loginStep === 'tic_auth' ? 'Senha TIC' : 'Senha'}
                     </label>
                     <div className="relative">
                       {(loginStep === 'admin_auth' || loginStep === 'secretaria_auth' || loginStep === 'tic_auth') && (
@@ -587,8 +561,8 @@ export default function Login({
                       <input
                         id="login-password"
                         type="password"
-                        value={loginStep === 'admin_auth' || loginStep === 'secretaria_auth' ? adminPassword : loginStep === 'tic_auth' ? ticToken : profSenha}
-                        onChange={(e) => loginStep === 'admin_auth' || loginStep === 'secretaria_auth' ? setAdminPassword(e.target.value) : loginStep === 'tic_auth' ? setTicToken(e.target.value) : setProfSenha(e.target.value)}
+                        value={loginStep === 'admin_auth' || loginStep === 'secretaria_auth' ? adminPassword : loginStep === 'tic_auth' ? ticPassword : profSenha}
+                        onChange={(e) => loginStep === 'admin_auth' || loginStep === 'secretaria_auth' ? setAdminPassword(e.target.value) : loginStep === 'tic_auth' ? setTicPassword(e.target.value) : setProfSenha(e.target.value)}
                         placeholder="••••••••"
                         className={`w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition ${
                           (loginStep === 'admin_auth' || loginStep === 'secretaria_auth' || loginStep === 'tic_auth') ? 'pl-10' : ''
@@ -672,7 +646,7 @@ export default function Login({
                   {supabaseCredentials.length === 0 ? (
                     <div className="rounded-xl bg-slate-50 px-3 py-3 text-xs text-slate-500">
                       {isSupabaseConfigured
-                        ? 'Nenhum acesso com senha/token foi retornado pelo Supabase.'
+                        ? 'Nenhum acesso com senha foi retornado pelo Supabase.'
                         : 'Supabase não configurado neste ambiente. Configure o .env para listar os acessos reais.'}
                     </div>
                   ) : (

@@ -1,11 +1,11 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import {
   Building,
+  ChevronDown,
   CheckCircle2,
   Loader2,
   LogOut,
   PanelLeft,
-  Settings,
   Shield,
   User,
   UserRound,
@@ -89,8 +89,16 @@ export default function App() {
       }
     };
 
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setAccountMenuOpen(false);
+    };
+
     window.addEventListener('pointerdown', handlePointerDown);
-    return () => window.removeEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [accountMenuOpen]);
 
   const requestConfirm = (title, message, onConfirm) => {
@@ -98,6 +106,7 @@ export default function App() {
   };
 
   const logout = () => {
+    setAccountMenuOpen(false);
     requestConfirm("Sair da Conta", "Deseja realmente sair da conta?", async () => {
       await supabase?.auth?.signOut?.();
       setCurrentUser(null);
@@ -112,6 +121,14 @@ export default function App() {
 
   const currentRole = currentUser?.role;
   const effectiveAdminTab = currentRole !== 'tic' && adminTab === 'config' ? 'dashboard' : adminTab;
+  const accountRoleLabel = getRoleLabel(currentRole);
+  const accountDetail = currentUser?.email || '';
+  const AccountRoleIcon = currentRole === 'empresa'
+    ? Building
+    : currentRole === 'professor'
+      ? User
+      : Shield;
+  const accountInitial = (accountRoleLabel || 'U').charAt(0).toUpperCase();
 
   const currentActiveTab = isAdministrativeRole(currentRole) ? effectiveAdminTab : currentRole === 'professor' ? profTab : empresaTab;
   const renderWithVLibras = (content) => (
@@ -223,43 +240,57 @@ export default function App() {
                 <div className="text-sm font-semibold text-slate-900">Diário Digital SENAI</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 pr-4 sm:pr-6 lg:pr-8">
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs font-medium">
-                {isAdministrativeRole(currentUser.role) && <Shield className="w-3.5 h-3.5 text-slate-600" />}
-                {currentUser.role === 'professor' && <User className="w-3.5 h-3.5 text-blue-600" />}
-                {currentUser.role === 'empresa' && <Building className="w-3.5 h-3.5 text-amber-600" />}
-                <span className="text-slate-600 hidden sm:inline">
-                  {isAdministrativeRole(currentUser.role) ? getRoleLabel(currentUser.role) : currentUser.role === 'professor' ? `Prof. ${currentUser.nome.split(' ')[0]}` : `Parceiro: ${currentUser.nome}`}
-                </span>
-              </div>
+            <div className="flex items-center pr-4 sm:pr-6 lg:pr-8">
               <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setAccountMenuOpen(prev => !prev)}
-                  className="ds-button ds-button-neutral"
-                  aria-label="Abrir ajustes da conta"
+                  className="account-trigger"
+                  aria-label={`Abrir menu da conta ${accountRoleLabel}`}
+                  aria-haspopup="menu"
                   aria-expanded={accountMenuOpen}
-                  title="Ajustes"
                 >
-                  <Settings className="w-4 h-4" />
+                  <span className="account-trigger-icon">
+                    <AccountRoleIcon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="account-trigger-label">{accountRoleLabel}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {accountMenuOpen && (
-                  <div className="account-menu absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+                  <div
+                    className="account-menu absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl"
+                    role="menu"
+                    aria-label="Menu do usuário"
+                  >
+                    <div className="account-menu-header">
+                      <span className="account-menu-avatar">{accountInitial}</span>
+                      <span className="account-menu-details">
+                        <strong>{currentUser?.nome || accountRoleLabel}</strong>
+                        {accountDetail && <span>{accountDetail}</span>}
+                      </span>
+                    </div>
+                    <div className="account-menu-divider" />
                     <button
                       type="button"
                       onClick={() => handleAccountMenuTabClick('perfil')}
                       className={`account-menu-item ${currentActiveTab === 'perfil' ? 'is-active' : ''}`}
+                      role="menuitem"
                     >
                       <UserRound className="h-4 w-4" />
-                      Perfil
+                      Acessar perfil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="account-menu-item is-danger"
+                      role="menuitem"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair da conta
                     </button>
                   </div>
                 )}
               </div>
-              <button onClick={logout} className="ds-button ds-button-neutral" title="Sair da Conta">
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
             </div>
           </div>
         </div>
