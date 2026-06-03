@@ -284,6 +284,13 @@ const loadUserProfile = async (authUserId, email) => {
 const hydrateAuthenticatedUser = async (profile, fallbackEmail) => {
   const role = textValue(profile?.role).trim().toLowerCase();
   const email = firstTextValue(profile?.email, fallbackEmail).trim().toLowerCase();
+  const fallbackNameByRole = {
+    coordenacao: 'Coordenação',
+    secretaria: 'Secretaria',
+    professor: 'Professor',
+    empresa: 'Empresa Parceira',
+    tic: 'TIC',
+  };
 
   if (role === 'professor') {
     const { data: professor, error } = await supabase
@@ -339,7 +346,7 @@ const hydrateAuthenticatedUser = async (profile, fallbackEmail) => {
     role,
     profileId: idToString(profile.id),
     id: idToString(profile.id || profile.auth_user_id),
-    nome: textValue(profile.nome || (role === 'secretaria' ? 'Secretaria' : 'Coordenação')),
+    nome: textValue(profile.nome || fallbackNameByRole[role] || 'Usuário'),
     email,
   };
 };
@@ -467,6 +474,14 @@ export const authenticateSupabaseUser = async ({ role, email, password }) => {
     }
   } else if (!allowLegacyPasswordLogin) {
     throw new Error('E-mail ou senha incorretos no Supabase Auth.');
+  }
+
+  if (normalizedRole === 'tic') {
+    throw new Error(
+      authResult?.error
+        ? 'E-mail ou senha TIC incorretos no Supabase Auth.'
+        : 'Conta TIC autenticada, mas sem perfil ativo vinculado em user_profiles.',
+    );
   }
 
   const tableByRole = {

@@ -146,7 +146,7 @@ export default function TicAdminTools({ data, syncStatus, syncError, showToast }
             </div>
             <div className="ds-muted-panel p-3">
               <strong className="block text-slate-900">Segurança</strong>
-              <span>Token TIC validado no acesso oculto. Em produção, validar exclusivamente no backend.</span>
+              <span>Acesso TIC validado pelo Supabase Auth e pelo perfil ativo em user_profiles.</span>
             </div>
             <div className="ds-muted-panel p-3">
               <strong className="block text-slate-900">Observabilidade</strong>

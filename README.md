@@ -31,7 +31,7 @@ Centralizar a rotina do diário de classe em uma plataforma institucional: profe
 ## Funcionalidades
 
 - Login por perfil com Coordenação e Secretaria separados.
-- Rota técnica `/sesisenaisp72` para acesso TIC, sem token padrão ou preenchimento automático.
+- Rota técnica `/sesisenaisp72` para acesso TIC validado por Supabase Auth e `user_profiles`.
 - Registro de presença por turma e data.
 - Histórico por aprendiz com presença, faltas, atrasos, observações e justificativas.
 - Dashboards por perfil e alertas para faltas/pedências.
@@ -88,12 +88,9 @@ http://127.0.0.1:5173/sesisenaisp72
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_SUPABASE_PUBLISHABLE_KEY=
-VITE_TIC_ACCESS_TOKEN=
 VITE_ALLOW_LEGACY_PASSWORD_LOGIN=false
 VITE_SHOW_TEST_CREDENTIALS=false
 ```
-
-`VITE_TIC_ACCESS_TOKEN` não possui valor padrão seguro. Configure localmente para testar o acesso TIC.
 
 ## Ambiente local
 

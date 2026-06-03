@@ -49,7 +49,7 @@ const credentials = {
   },
   tic: {
     email: env.TEST_TIC_EMAIL || env.SEED_TIC_EMAIL || 'tic@senaisp.edu.br',
-    password: env.TEST_TIC_PASSWORD || env.SEED_TIC_PASSWORD || env.VITE_TIC_ACCESS_TOKEN || defaultPassword,
+    password: env.TEST_TIC_PASSWORD || env.SEED_TIC_PASSWORD || defaultPassword,
   },
 };
 
@@ -68,6 +68,37 @@ const failIfError = (label, error) => {
   if (error) throw new Error(`${label}: ${error.message}`);
 };
 
+const isMissingSchemaObjectError = (error, relation) => {
+  const message = String(error?.message || '').toLowerCase();
+  return message.includes(relation)
+    || message.includes('schema cache')
+    || message.includes('does not exist')
+    || message.includes('could not find the function')
+    || message.includes('could not find the table');
+};
+
+const loadCurrentProfile = async (client, authUser, email) => {
+  const { data: rpcProfile, error: rpcError } = await client.rpc('get_current_user_profile');
+  if (!rpcError && rpcProfile) return rpcProfile;
+
+  if (rpcError && !isMissingSchemaObjectError(rpcError, 'get_current_user_profile')) {
+    failIfError('Perfil RPC', rpcError);
+  }
+
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const filters = [`auth_user_id.eq.${authUser.id}`];
+  if (normalizedEmail) filters.push(`email.eq.${normalizedEmail}`);
+
+  const { data: profile, error } = await client
+    .from('user_profiles')
+    .select('*')
+    .or(filters.join(','))
+    .maybeSingle();
+
+  failIfError('Perfil user_profiles', error);
+  return profile;
+};
+
 const loginAs = async (role) => {
   const client = createSupabaseClient();
   const credential = credentials[role];
@@ -75,8 +106,7 @@ const loginAs = async (role) => {
   failIfError(`Login ${role}`, error);
   assert(data?.user, `Login ${role} nao retornou usuario Auth.`);
 
-  const { data: profile, error: profileError } = await client.rpc('get_current_user_profile');
-  failIfError(`Perfil ${role}`, profileError);
+  const profile = await loadCurrentProfile(client, data.user, credential.email);
   assert(profile?.role === role, `Perfil esperado ${role}, recebido ${profile?.role || 'nenhum'}.`);
 
   return { client, profile };
